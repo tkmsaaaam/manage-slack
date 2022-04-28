@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: ['2.6', '2.7', '3.0']
+        ruby-version: '2.6'
 
     steps:
     - uses: actions/checkout@v3
@@ -24,4 +24,6 @@ jobs:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
     - name: Run Script
-      run: ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
+      run: 
+        bundle install
+        ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
