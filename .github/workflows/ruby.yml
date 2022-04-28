@@ -24,4 +24,4 @@ jobs:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true
     - name: Run Script
-      run: bundle exec rake main.rb ${{ secrets.TOKEN_FOR_BOT }}
+      run: ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
