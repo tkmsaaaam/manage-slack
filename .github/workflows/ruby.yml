@@ -22,11 +22,3 @@ jobs:
         run: |
           bundle install --path vendor/bundle
           bundle exec ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
-      - name: Send GitHub Action trigger data to Slack workflow
-          uses: slackapi/slack-github-action@v1.16.0
-          with:
-            channel-id: 'C02V3776R9S'
-            payload: |
-              {
-                "text": ":GitHub: スクリプト実行結果: ${{ job.status }}\n\n${{ github.event.action.html_url || GitHub Actions }}"
-              }
