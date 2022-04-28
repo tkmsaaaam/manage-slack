@@ -21,6 +21,6 @@ jobs:
         ruby-version: 2.6.3
         bundler-cache: true
     - name: Run Script
-      run: 
+      run: |
         bundle install
         ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
