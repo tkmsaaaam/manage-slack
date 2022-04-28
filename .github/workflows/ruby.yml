@@ -22,5 +22,5 @@ jobs:
         bundler-cache: true
     - name: Run Script
       run: |
-        bundle install
-        ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
+        bundle install --path vendor/bundle
+        bundle exec ruby main.rb ${{ secrets.TOKEN_FOR_BOT }}
