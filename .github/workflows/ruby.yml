@@ -12,16 +12,13 @@ jobs:
   script:
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ruby-version: 2.6
 
     steps:
     - uses: actions/checkout@v3
     - name: Set up Ruby
       uses: ruby/setup-ruby@473e4d8fe5dd94ee328fdfca9f8c9c7afc9dae5e
       with:
-        ruby-version: ${{ matrix.ruby-version }}
+        ruby-version: 2.6.3
         bundler-cache: true
     - name: Run Script
       run: 
