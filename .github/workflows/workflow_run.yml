@@ -15,6 +15,8 @@ jobs:
             {
               "text": "requested"
             }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
   on-success:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -26,6 +28,8 @@ jobs:
             {
               "text": "success"
             }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
   on-failure:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
@@ -37,3 +41,5 @@ jobs:
             {
               "text": "failure"
             }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
