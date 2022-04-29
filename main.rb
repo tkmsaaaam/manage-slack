@@ -21,7 +21,7 @@ begin
       end
       res = client.conversations_history(channel: c.id, limit: 100, latest: (Time.now - (60*60*24*3)).to_i).messages
     end
-    puts "#{c.name}:#{count}"
+    puts "#{c.id}:#{count}"
   end
 rescue => e
   puts "Error #{e}"
