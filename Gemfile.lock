@@ -1,7 +1,7 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    faraday (1.9.3)
+    faraday (1.10.0)
       faraday-em_http (~> 1.0)
       faraday-em_synchrony (~> 1.0)
       faraday-excon (~> 1.1)
@@ -42,9 +42,11 @@ GEM
 
 PLATFORMS
   ruby
+  x86_64-darwin-21
+  x86_64-linux
 
 DEPENDENCIES
   slack-ruby-client
 
 BUNDLED WITH
-   1.17.2
+   2.3.12
