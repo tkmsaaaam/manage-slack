@@ -13,7 +13,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "requested"
+              "text": "タスク実行が開始されました"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
@@ -26,7 +26,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "success"
+              "text": "GitHub タスク実行結果: ${{ github.event.action.html_url || job.status }}",
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
@@ -39,7 +39,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "failure"
+              "text": "GitHub タスク実行結果: ${{ github.event.action.html_url || job.status }}",
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
