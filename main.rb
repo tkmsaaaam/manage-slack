@@ -17,6 +17,7 @@ begin
     until res.size.zero? do
       res.each do |a|
         puts client.chat_delete(channel: c.id, ts: a.ts)
+        count += 1
       end
       res = client.conversations_history(channel: c.id, limit: 100, latest: (Time.now - (60*60*24*3)).to_i).messages
     end
@@ -26,5 +27,5 @@ rescue => e
   puts "Error #{e}"
   sleep(1)
   err_count += 1
-  retry if err_count < 10
+  retry if err_count < 50
 end
