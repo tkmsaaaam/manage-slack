@@ -1,0 +1,39 @@
+name: workflow_run_notification
+on:
+  workflow_run:
+    workflows: [Ruby, Run Script]
+    types: [requested, completed]
+jobs:
+  on-requested:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == '' }}
+    steps:
+      - uses: slackapi/slack-github-action@v1.18.0
+        with:
+          channel-id: 'C02V3776R9S'
+          payload: |
+            {
+              "text": "requested"
+            }
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: slackapi/slack-github-action@v1.18.0
+        with:
+          channel-id: 'C02V3776R9S'
+          payload: |
+            {
+              "text": "success"
+            }
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - uses: slackapi/slack-github-action@v1.18.0
+        with:
+          channel-id: 'C02V3776R9S'
+          payload: |
+            {
+              "text": "failure"
+            }
