@@ -26,7 +26,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "GitHub タスク実行結果: <$GITHUB_EVENT_PATH | ${{ github.event.workflow_run.conclusion }}>"
+              "text": "GitHub タスク実行結果: <${{ GITHUB_EVENT_PATH }} | ${{ github.event.workflow_run.conclusion }}>"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
@@ -39,7 +39,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "GitHub タスク実行結果: <$GITHUB_EVENT_PATH | ${{ github.event.workflow_run.conclusion }}>"
+              "text": "GitHub タスク実行結果: <${{ GITHUB_EVENT_PATH }} | ${{ github.event.workflow_run.conclusion }}>"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_BOT }}
