@@ -26,7 +26,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}"
+              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\nhttps://github.com/tkmsaaaam/manage-slack/actions"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
@@ -39,7 +39,7 @@ jobs:
           channel-id: 'C02V3776R9S'
           payload: |
             {
-              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}"
+              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\nhttps://github.com/tkmsaaaam/manage-slack/actions"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
