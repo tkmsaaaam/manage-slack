@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: slackapi/slack-github-action@v1.18.0
         with:
-          channel-id: 'C02V3776R9S'
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
               "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\nhttps://github.com/tkmsaaaam/manage-slack/actions"
@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: slackapi/slack-github-action@v1.18.0
         with:
-          channel-id: 'C02V3776R9S'
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
               "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\nhttps://github.com/tkmsaaaam/manage-slack/actions"
