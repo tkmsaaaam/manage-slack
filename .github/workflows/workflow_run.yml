@@ -1,7 +1,7 @@
 name: workflow_run_notification
 on:
   workflow_run:
-    workflows: [Ruby, Run Script]
+    workflows: Ruby
     types: [requested, completed]
 jobs:
   on-requested:
