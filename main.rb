@@ -23,7 +23,6 @@ channels.each do |c|
         puts "Error #{e}"
         sleep(1)
         err_count += 1
-        retry if err_count < 50
       end
     end
     res = client.conversations_history(channel: c.id, limit: 100, latest: (Time.now - (60*60*24*3)).to_i).messages
