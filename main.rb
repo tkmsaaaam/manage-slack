@@ -9,6 +9,7 @@ client = Slack::Web::Client.new
 channels = client.conversations_list().channels
 
 err_count = 0
+total_count = 0
 
 channels.each do |c|
   res = client.conversations_history(channel: c.id, limit: 100, latest: (Time.now - (60*60*24*3)).to_i).messages
@@ -27,7 +28,8 @@ channels.each do |c|
     end
     res = client.conversations_history(channel: c.id, limit: 100, latest: (Time.now - (60*60*24*3)).to_i).messages
   end
+  total_count += count
   puts "#{c.id}:#{count}"
 end
 
-puts "Error occurred #{err_count} times."
+puts "Deleted #{total_count} messages.\nError occurred #{err_count} times."
