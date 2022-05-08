@@ -26,7 +26,7 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.event.server_url }}${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.server_url }}${{ github.repository }}/actions/runs/${{ github.run_id }}\n${{ github }}"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
@@ -39,7 +39,7 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.event.server_url }}${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.server_url }}${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
