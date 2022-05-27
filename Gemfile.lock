@@ -29,6 +29,7 @@ GEM
     gli (2.21.0)
     hashie (5.0.0)
     multipart-post (2.1.1)
+    parallel (1.22.1)
     ruby2_keywords (0.0.5)
     slack-ruby-client (1.0.0)
       faraday (>= 1.0)
@@ -46,6 +47,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  parallel
   slack-ruby-client
 
 BUNDLED WITH

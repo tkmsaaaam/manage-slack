@@ -1,4 +1,5 @@
 require 'slack-ruby-client'
+require 'parallel'
 
 Slack.configure do |config|
   config.token = ARGV[0]
@@ -15,9 +16,9 @@ channels.each do |c|
   res = client.conversations_history(channel: c.id, limit: 100, latest: (Time.now - (60*60*24*3)).to_i).messages
   count = 0
   until res.size.zero? do
-    res.each do |a|
+    Parallel.each(res, in_processes: 20) do |r|
       begin
-        puts client.chat_delete(channel: c.id, ts: a.ts)
+        puts client.chat_delete(channel: c.id, ts: r.ts)
         count += 1
       rescue => e
         puts "Error #{e}"
