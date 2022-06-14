@@ -13,11 +13,10 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "タスク実行が開始されました \n${{ date }}"
+              "text": "タスク実行が開始されました"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
-          TZ: "Asia/Tokyo"
   on-success:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -27,11 +26,10 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n${{ date }}"
+              "text": "GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
-          TZ: "Asia/Tokyo"
   on-failure:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
@@ -41,8 +39,7 @@ jobs:
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           payload: |
             {
-              "text": "<!channel>GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n${{ date }}"
+              "text": "<!channel>GitHub タスク実行結果: ${{ github.event.workflow_run.conclusion }}\n\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.TOKEN_FOR_SLACK_BOT }}
-          TZ: "Asia/Tokyo"
