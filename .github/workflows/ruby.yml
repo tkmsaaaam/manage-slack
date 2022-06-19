@@ -2,7 +2,9 @@ name: Ruby
 
 on:
   schedule:
-    - cron:  '13 20 * * *'
+    - cron:  '13 2 * * *'
+    - cron:  '13 10 * * *'
+    - cron:  '13 18 * * *'
   workflow_dispatch:
 
 permissions:
