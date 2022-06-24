@@ -3,9 +3,8 @@ name: Ruby
 on:
   schedule:
     - cron:  '13 0 * * *'
-    - cron:  '13 6 * * *'
-    - cron:  '13 12 * * *'
-    - cron:  '13 18 * * *'
+    - cron:  '13 8 * * *'
+    - cron:  '13 16 * * *'
   workflow_dispatch:
 
 permissions:
