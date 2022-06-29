@@ -9,6 +9,10 @@ end
 
 client = Slack::Web::Client.new
 
+START_MESSAGE = `タスク実行を開始します\n#{Time.now}`.freeze
+
+slack.chat_postMessage(channel: ARGV[1], text: START_MESSAGE)
+
 channels = client.conversations_list.channels
 
 THREE_DAYS_BEFORE = 60 * 60 * 24 * 3
