@@ -9,7 +9,7 @@ end
 
 client = Slack::Web::Client.new
 
-start_message = `タスク実行を開始します\n#{Time.now}`
+start_message = "タスク実行を開始します\n#{Time.now}"
 
 client.chat_postMessage(channel: ARGV[1], text: start_message)
 
