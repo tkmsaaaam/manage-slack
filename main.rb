@@ -9,9 +9,9 @@ end
 
 client = Slack::Web::Client.new
 
-START_MESSAGE = `タスク実行を開始します\n#{Time.now}`.freeze
+start_message = `タスク実行を開始します\n#{Time.now}`
 
-client.chat_postMessage(channel: ARGV[1], text: START_MESSAGE)
+client.chat_postMessage(channel: ARGV[1], text: start_message)
 
 channels = client.conversations_list.channels
 
