@@ -21,4 +21,4 @@ jobs:
       - name: Run Script
         run: |
           bundle install --path vendor/bundle
-          bundle exec ruby main.rb ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }}
+          bundle exec ruby main.rb ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }} ${{ secrets.TOKEN_FOR_SLACK_BOT }}
