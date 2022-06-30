@@ -3,11 +3,7 @@
 require 'slack-ruby-client'
 require 'parallel'
 
-Slack.configure do |config|
-  config.token = ARGV[0]
-end
-
-client = Slack::Web::Client.new
+client = Slack::Web::Client.new(token: ARGV[0])
 
 start_message = "タスク実行を開始します\n#{Time.now}"
 
