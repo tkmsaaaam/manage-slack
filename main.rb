@@ -6,7 +6,8 @@ require 'parallel'
 client = Slack::Web::Client.new(token: ARGV[0])
 client_bot = Slack::Web::Client.new(token: ARGV[2])
 
-START_MESSAGE = "タスク実行を開始します\n#{Time.now}"
+START_TIME = Time.now
+START_MESSAGE = "タスク実行を開始します\n#{START_TIME}"
 thread_ts = client_bot.chat_postMessage(channel: ARGV[1], text: START_MESSAGE).ts
 
 channels = client.conversations_list.channels
@@ -27,5 +28,7 @@ channels.each do |c|
   puts c.id
 end
 
-END_MESSAGE = "タスク実行を終了します\n#{Time.now}"
+END_TIME = Time.now
+TIME_DIFF = END_TIME - START_TIME
+END_MESSAGE = "タスク実行を終了します\n#{END_TIME}\n実行時間#{TIME_DIFF}秒"
 client_bot.chat_postMessage(channel: ARGV[1], text: END_MESSAGE, thread_ts: thread_ts, reply_broadcast: true)
