@@ -13,19 +13,18 @@ thread_ts = client_bot.chat_postMessage(channel: ARGV[1], text: START_MESSAGE).t
 channels = client.conversations_list.channels
 
 THREE_DAYS_BEFORE = 60 * 60 * 24 * 3
+LATEST = START_TIME - THREE_DAYS_BEFORE
 
 channels.each do |c|
-  res = client.conversations_history(channel: c.id, lgimit: 100, latest: (START_TIME - THREE_DAYS_BEFORE).to_i).messages
+  res = client.conversations_history(channel: c.id, lgimit: 100, latest: LATEST.to_i).messages
   until res.size.zero?
     Parallel.each(res, in_processes: 20) do |r|
       puts client.chat_delete(channel: c.id, ts: r.ts)
     rescue StandardError => e
-      puts "Error #{e}"
+      puts "Error #{e} #{c.id} #{r}"
       sleep(1)
     end
-    res = client.conversations_history(
-      channel: c.id, limit: 100, latest: (START_TIME - THREE_DAYS_BEFORE).to_i
-    ).messages
+    res = client.conversations_history(channel: c.id, lgimit: 100, latest: LATEST.to_i).messages
   end
   puts c.id
 end
