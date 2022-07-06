@@ -16,13 +16,12 @@ THREE_DAYS_BEFORE = 60 * 60 * 24 * 3
 LATEST = START_TIME - THREE_DAYS_BEFORE
 
 channels.each do |c|
-  next if c.id == 'C02V3776R9S'
   res = client.conversations_history(channel: c.id, lgimit: 100, latest: LATEST.to_i).messages
   until res.size.zero?
     Parallel.each(res, in_processes: 20) do |r|
       puts client.chat_delete(channel: c.id, ts: r.ts)
     rescue StandardError => e
-      puts "Error #{e} #{c.id} #{r}"
+      puts "Error #{e}"
       sleep(1)
     end
     res = client.conversations_history(channel: c.id, lgimit: 100, latest: LATEST.to_i).messages
