@@ -16,8 +16,9 @@ func getChannels(client *slack.Client) []slack.Channel {
 
 func postStartMessage(client *slack.Client, start time.Time) string {
 	message := "タスク実行を開始します\n" + start.String()
-	_, ts, _ := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
-	return ts[:0]
+	var ts string
+	_, ts, _ = client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
+	return ts
 }
 
 func postEndMessage(client *slack.Client, start time.Time, ts string) {
