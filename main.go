@@ -37,7 +37,12 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 			ts := res.Messages[j].Msg.Timestamp
 			_, _, err := client.DeleteMessage(id, ts)
 			if err != nil {
-				fmt.Println(err)
+				if err.Error() != "message_not_found" {
+					time.Sleep(time.Second * 1)
+					recover()
+				} else {
+					fmt.Println(err)
+				}
 			}
 		}
 	}
