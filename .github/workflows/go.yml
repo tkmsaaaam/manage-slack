@@ -1,6 +1,8 @@
 name: Go
 
 on:
+  schedule:
+    - cron:  '13 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -24,5 +26,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Run script
-        run : go run main.go ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.CHANNEL_ID }}
+        run : go run main.go ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }}
         timeout-minutes: 1
