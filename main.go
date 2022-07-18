@@ -16,14 +16,20 @@ func getChannels(client *slack.Client) []slack.Channel {
 
 func postStartMessage(client *slack.Client, start time.Time) {
 	message := "タスク実行を開始します\n" + start.String()
-	client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
+	_, _, err := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func postEndMessage(client *slack.Client, start time.Time) {
 	now := time.Now()
 	diff := now.Sub(start)
 	message := "タスク実行を終了します\n" + now.String() + "\n" + diff.String()
-	client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
+	_, _, err := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time) {
