@@ -1,0 +1,30 @@
+name: Go
+
+on:
+  schedule:
+    - cron:  '13 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.18
+        id: go
+      - name: check out
+        uses: actions/checkout@v2
+      - name: Cache
+        uses: actions/cache@v2.1.0
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Run script
+        run : go run main.go ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.CHANNEL_ID }}
+        timeout-minutes: 1
