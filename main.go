@@ -55,14 +55,11 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 }
 
 func main() {
-	token := os.Args[1]
-	user_token := os.Args[2]
-	client := slack.New(token)
-	user_client := slack.New(user_token)
-	var channels []slack.Channel
-	channels = getChannels(client)
+	botClient := slack.New(os.Args[1])
 	start := time.Now()
-	ts := postStartMessage(client, start)
-	deleteMessages(user_client, channels, start)
-	postEndMessage(client, start, ts)
+	ts := postStartMessage(botClient, start)
+	userClient := slack.New(os.Args[2])
+	channels := getChannels(userClient)
+	deleteMessages(userClient, channels, start)
+	postEndMessage(botClient, start, ts)
 }
