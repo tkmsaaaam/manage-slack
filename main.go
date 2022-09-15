@@ -9,14 +9,15 @@ import (
 )
 
 func getChannels(client *slack.Client) []slack.Channel {
-	params := slack.GetConversationsParameters{}
-	channels, _, _ := client.GetConversations(&params)
+	channels, _, err := client.GetConversations(&slack.GetConversationsParameters{})
+	if err != nil {
+		fmt.Println(err)
+	}
 	return channels
 }
 
 func postStartMessage(client *slack.Client) string {
-	message := "タスク実行を開始します"
-	_, ts, err := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true))
+	_, ts, err := client.PostMessage(os.Args[3], slack.MsgOptionText("タスク実行を開始します", true))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -24,9 +25,8 @@ func postStartMessage(client *slack.Client) string {
 }
 
 func postEndMessage(client *slack.Client, start time.Time, ts string) {
-	now := time.Now()
-	diff := now.Sub(start)
-	message := "タスク実行を終了します\n" + diff.String()
+	diff := time.Now().Sub(start).String()
+	message := "タスク実行を終了します\n" + diff
 	_, _, err := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
 		fmt.Println(err)
