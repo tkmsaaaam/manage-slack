@@ -1,5 +1,7 @@
 name: Go
 
+permissions: {}
+
 on:
   schedule:
     - cron:  '13 * * * *'
