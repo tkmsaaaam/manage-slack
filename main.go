@@ -25,8 +25,7 @@ func postStartMessage(client *slack.Client) string {
 }
 
 func postEndMessage(client *slack.Client, start time.Time, ts string) {
-	diff := time.Now().Sub(start).String()
-	message := "タスク実行を終了します\n" + diff
+	message := "タスク実行を終了します\n" + time.Now().Sub(start).String()
 	_, _, err := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
 		fmt.Println(err)
