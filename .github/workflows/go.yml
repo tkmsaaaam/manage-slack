@@ -1,5 +1,6 @@
 name: Go
-permissions: {}
+permissions:
+  actions: write
 on:
   schedule:
     - cron: '13 * * * *'
@@ -8,10 +9,18 @@ jobs:
   script:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: setup go
+        uses: actions/setup-go@v3
         with:
           go-version: ^1.19
       - name: Run script
         run: go run main.go ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }}
         timeout-minutes: 1
+      - name: manage self action
+        run: |
+          gh workflow disable "Go"
+          gh workflow enable "Go"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
