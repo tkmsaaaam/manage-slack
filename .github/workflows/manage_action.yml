@@ -1,0 +1,21 @@
+name: ManageAction
+permissions:
+  actions: write
+on:
+  schedule:
+    - cron: '12 12 1 * *'
+  workflow_dispatch:
+jobs:
+  script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: manage actions
+        run: |
+          gh workflow disable "Go"
+          gh workflow enable "Go"
+          gh workflow disable "ManageAction"
+          gh workflow enable "ManageAction"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

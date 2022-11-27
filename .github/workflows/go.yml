@@ -1,6 +1,5 @@
 name: Go
-permissions:
-  actions: write
+permissions: {}
 on:
   schedule:
     - cron: '13 * * * *'
@@ -18,9 +17,3 @@ jobs:
       - name: Run script
         run: go run main.go ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }}
         timeout-minutes: 1
-      - name: manage self action
-        run: |
-          gh workflow disable "Go"
-          gh workflow enable "Go"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
