@@ -4,9 +4,16 @@ on:
   schedule:
     - cron: '13 * * * *'
   workflow_dispatch:
+    inputs:
+      days:
+        type: number
+        required: false
+        description: 'days'
 jobs:
   script:
     runs-on: ubuntu-latest
+    env:
+      DAYS: ${{ github.event.inputs.days || 3 }}
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
@@ -14,4 +21,4 @@ jobs:
           path: ~/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}
           key: ${{ runner.os }}-go-${{ github.sha }}
       - name: Execute
-        run: ~/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/${{ github.event.repository.name }} ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }}
+        run: ~/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}/${{ github.event.repository.name }} ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }} $DAYS

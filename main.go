@@ -32,10 +32,11 @@ func postEndMessage(client *slack.Client, start time.Time, ts string) {
 	}
 }
 
-func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time) {
+func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) {
+	days, _ := strconv.Atoi(daysStr)
 	for i := range channels {
 		id := channels[i].ID
-		latest := strconv.FormatInt(now.AddDate(0, 0, -3).Unix(), 10)
+		latest := strconv.FormatInt(now.AddDate(0, 0, -days).Unix(), 10)
 		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest}
 		res, _ := client.GetConversationHistory(&params)
 		for j := range res.Messages {
@@ -59,6 +60,6 @@ func main() {
 	ts := postStartMessage(botClient)
 	userClient := slack.New(os.Args[2])
 	channels := getChannels(userClient)
-	deleteMessages(userClient, channels, start)
+	deleteMessages(userClient, channels, start, os.Args[4])
 	postEndMessage(botClient, start, ts)
 }
