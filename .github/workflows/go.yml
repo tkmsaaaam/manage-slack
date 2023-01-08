@@ -9,11 +9,16 @@ on:
         type: number
         required: false
         description: 'days'
+      timeout:
+        type: number
+        required: false
+        description: 'timeout'
 jobs:
   script:
     runs-on: ubuntu-latest
     env:
       DAYS: ${{ github.event.inputs.days || 3 }}
+    timeout-minutes: ${{ github.event.inputs.timeout || 3 }}
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
