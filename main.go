@@ -9,7 +9,7 @@ import (
 )
 
 func getChannels(client *slack.Client) []slack.Channel {
-	channels, _, err := client.GetConversations(&slack.GetConversationsParameters{})
+	channels, _, err := client.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -58,8 +58,7 @@ func main() {
 	botClient := slack.New(os.Args[1])
 	start := time.Now()
 	ts := postStartMessage(botClient)
-	userClient := slack.New(os.Args[2])
-	channels := getChannels(userClient)
-	deleteMessages(userClient, channels, start, os.Args[4])
+	channels := getChannels(botClient)
+	deleteMessages(botClient, channels, start, os.Args[4])
 	postEndMessage(botClient, start, ts)
 }
