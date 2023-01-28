@@ -17,7 +17,7 @@ func getChannels(client *slack.Client) []slack.Channel {
 }
 
 func postStartMessage(client *slack.Client) string {
-	_, ts, err := client.PostMessage(os.Args[3], slack.MsgOptionText("タスク実行を開始します", true))
+	_, ts, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText("タスク実行を開始します", true))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -26,7 +26,7 @@ func postStartMessage(client *slack.Client) string {
 
 func postEndMessage(client *slack.Client, start time.Time, ts string) {
 	message := "タスク実行を終了します\n" + time.Now().Sub(start).String()
-	_, _, err := client.PostMessage(os.Args[3], slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
+	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -55,10 +55,10 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 }
 
 func main() {
-	botClient := slack.New(os.Args[1])
+	botClient := slack.New(os.Getenv("SLACK_OAUTH_BOT_TOKEN"))
 	start := time.Now()
 	ts := postStartMessage(botClient)
 	channels := getChannels(botClient)
-	deleteMessages(botClient, channels, start, os.Args[4])
+	deleteMessages(botClient, channels, start, os.Args[1])
 	postEndMessage(botClient, start, ts)
 }

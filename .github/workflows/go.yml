@@ -26,4 +26,7 @@ jobs:
           path: ${{ github.workspace }}/${{ github.event.repository.name }}
           key: ${{ runner.os }}-go-${{ github.sha }}
       - name: Execute
-        run: ${{ github.workspace }}/${{ github.event.repository.name }} ${{ secrets.TOKEN_FOR_SLACK_BOT }} ${{ secrets.TOKEN_FOR_BOT }} ${{ secrets.SLACK_CHANNEL_ID }} $DAYS
+        run: ${{ github.workspace }}/${{ github.event.repository.name }} $DAYS
+        env:
+          SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
