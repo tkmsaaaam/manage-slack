@@ -44,6 +44,8 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 			_, _, err := client.DeleteMessage(id, ts)
 			if err != nil {
 				if err.Error() != "message_not_found" {
+					fmt.Println(id + ":" + ts)
+					fmt.Println(err)
 					time.Sleep(time.Second * 1)
 					recover()
 				} else {
@@ -56,9 +58,10 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 
 func main() {
 	botClient := slack.New(os.Getenv("SLACK_OAUTH_BOT_TOKEN"))
+	userClient := slack.New(os.Getenv("SLACK_OAUTH_USER_TOKEN"))
 	start := time.Now()
 	ts := postStartMessage(botClient)
-	channels := getChannels(botClient)
-	deleteMessages(botClient, channels, start, os.Args[1])
+	channels := getChannels(userClient)
+	deleteMessages(userClient, channels, start, os.Args[1])
 	postEndMessage(botClient, start, ts)
 }

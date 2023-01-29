@@ -32,4 +32,5 @@ jobs:
         run: ${{ github.workspace }}/${{ github.event.repository.name }} $DAYS
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
+          SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
