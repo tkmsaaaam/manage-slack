@@ -13,6 +13,9 @@ on:
         type: number
         required: false
         description: 'timeout'
+  workflow_run:
+    workflows: [build]
+    types: [completed]
 jobs:
   script:
     runs-on: ubuntu-latest
