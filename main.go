@@ -27,8 +27,8 @@ func postStartMessage(client *slack.Client) string {
 
 func postEndMessage(client *slack.Client, start time.Time, ts string, count int) {
 	duration := time.Now().Sub(start)
-	avg := count / int(duration)
-	message := "タスク実行を終了します\n" + duration.String() + "\n" + "count:" + strconv.FormatInt(int64(count), 10) + "\n" + "avg:" + strconv.FormatInt(int64(avg), 10)
+	avg := float64(count) / duration.Seconds()
+	message := "タスク実行を終了します\n" + duration.String() + "\n" + "count:" + strconv.FormatInt(int64(count), 10) + "\n" + "avg:" + strconv.FormatFloat(avg, 'f', -1, 64) + "/s"
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
 		fmt.Println(err)
