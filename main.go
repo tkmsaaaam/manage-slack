@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/slack-go/slack"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/slack-go/slack"
 )
 
 func getChannels(client *slack.Client) []slack.Channel {
@@ -24,15 +25,18 @@ func postStartMessage(client *slack.Client) string {
 	return ts
 }
 
-func postEndMessage(client *slack.Client, start time.Time, ts string) {
-	message := "タスク実行を終了します\n" + time.Now().Sub(start).String()
+func postEndMessage(client *slack.Client, start time.Time, ts string, count int) {
+	duration := time.Now().Sub(start)
+	avg := count / int(duration)
+	message := "タスク実行を終了します\n" + duration.String() + "\n" + "count:" + strconv.FormatInt(int64(count), 10) + "\n" + "avg:" + strconv.FormatInt(int64(avg), 10)
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) {
+func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
+	count := 0
 	days, _ := strconv.Atoi(daysStr)
 	for i := range channels {
 		id := channels[i].ID
@@ -40,6 +44,7 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest}
 		res, _ := client.GetConversationHistory(&params)
 		for j := range res.Messages {
+			count++
 			ts := res.Messages[j].Msg.Timestamp
 			_, _, err := client.DeleteMessage(id, ts)
 			if err != nil {
@@ -54,6 +59,7 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 			}
 		}
 	}
+	return count
 }
 
 func main() {
@@ -62,6 +68,6 @@ func main() {
 	start := time.Now()
 	ts := postStartMessage(botClient)
 	channels := getChannels(userClient)
-	deleteMessages(userClient, channels, start, os.Args[1])
-	postEndMessage(botClient, start, ts)
+	count := deleteMessages(userClient, channels, start, os.Args[1])
+	postEndMessage(botClient, start, ts, count)
 }
