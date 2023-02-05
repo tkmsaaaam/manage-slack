@@ -60,7 +60,7 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 		for _, message := range res.Messages {
 			count++
 			if message.ReplyCount != 0 {
-				repliesParams := slack.GetConversationRepliesParameters{}
+				repliesParams := slack.GetConversationRepliesParameters{ChannelID: id, Timestamp: message.Msg.Timestamp}
 				replies, _, _, _ := client.GetConversationReplies(&repliesParams)
 				for _, reply := range replies {
 					count++
