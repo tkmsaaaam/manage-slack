@@ -35,6 +35,20 @@ func postEndMessage(client *slack.Client, start time.Time, ts string, count int)
 	}
 }
 
+func deleteMessage(client *slack.Client, id string, ts string) {
+	_, _, err := client.DeleteMessage(id, ts)
+	if err != nil {
+		fmt.Println(id + ":" + ts + ":" + err.Error())
+		if err.Error() != "message_not_found" {
+			fmt.Println(err)
+			time.Sleep(time.Second * 1)
+			recover()
+		} else {
+			fmt.Println(err)
+		}
+	}
+}
+
 func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
 	count := 0
 	days, _ := strconv.Atoi(daysStr)
@@ -45,39 +59,17 @@ func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Tim
 		res, _ := client.GetConversationHistory(&params)
 		for j := range res.Messages {
 			count++
-			repliesCount := res.Messages[j].ReplyCount
-			if repliesCount != 0 {
+			if res.Messages[j].ReplyCount != 0 {
 				repliesParams := slack.GetConversationRepliesParameters{}
 				replies, _, _, _ := client.GetConversationReplies(&repliesParams)
 				for k := range replies {
 					count++
 					replyTs := replies[k].Msg.Timestamp
-					_, _, err := client.DeleteMessage(id, replyTs)
-					if err != nil {
-						fmt.Println(id + ":" + replyTs + ":" + err.Error())
-						if err.Error() != "message_not_found" {
-							fmt.Println(err)
-							time.Sleep(time.Second * 1)
-							recover()
-						} else {
-							fmt.Println(err)
-						}
-					}
+					deleteMessage(client, id, replyTs)
 				}
-
 			}
 			ts := res.Messages[j].Msg.Timestamp
-			_, _, err := client.DeleteMessage(id, ts)
-			if err != nil {
-				fmt.Println(id + ":" + ts + ":" + err.Error())
-				if err.Error() != "message_not_found" {
-					fmt.Println(err)
-					time.Sleep(time.Second * 1)
-					recover()
-				} else {
-					fmt.Println(err)
-				}
-			}
+			deleteMessage(client, id, ts)
 		}
 	}
 	return count
