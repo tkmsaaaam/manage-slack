@@ -52,24 +52,22 @@ func deleteMessage(client *slack.Client, id string, ts string) {
 func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
 	count := 0
 	days, _ := strconv.Atoi(daysStr)
-	for i := range channels {
-		id := channels[i].ID
+	for _, channel := range channels {
+		id := channel.ID
 		latest := strconv.FormatInt(now.AddDate(0, 0, -days).Unix(), 10)
 		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest}
 		res, _ := client.GetConversationHistory(&params)
-		for j := range res.Messages {
+		for _, message := range res.Messages {
 			count++
-			if res.Messages[j].ReplyCount != 0 {
+			if message.ReplyCount != 0 {
 				repliesParams := slack.GetConversationRepliesParameters{}
 				replies, _, _, _ := client.GetConversationReplies(&repliesParams)
-				for k := range replies {
+				for _, reply := range replies {
 					count++
-					replyTs := replies[k].Msg.Timestamp
-					deleteMessage(client, id, replyTs)
+					deleteMessage(client, id, reply.Msg.Timestamp)
 				}
 			}
-			ts := res.Messages[j].Msg.Timestamp
-			deleteMessage(client, id, ts)
+			deleteMessage(client, id, message.Msg.Timestamp)
 		}
 	}
 	return count
