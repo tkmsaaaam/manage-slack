@@ -40,11 +40,7 @@ func deleteMessage(client *slack.Client, id string, ts string) {
 	if err != nil {
 		fmt.Println(id + ":" + ts + ":" + err.Error())
 		if err.Error() != "message_not_found" {
-			fmt.Println(err)
-			time.Sleep(time.Second * 1)
 			recover()
-		} else {
-			fmt.Println(err)
 		}
 	}
 }
