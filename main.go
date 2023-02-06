@@ -45,7 +45,7 @@ func deleteMessage(client *slack.Client, id string, ts string) {
 	}
 }
 
-func deleteMessages(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
+func loopInAllChannels(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
 	count := 0
 	days, _ := strconv.Atoi(daysStr)
 	for _, channel := range channels {
@@ -75,6 +75,6 @@ func main() {
 	start := time.Now()
 	ts := postStartMessage(botClient)
 	channels := getChannels(userClient)
-	count := deleteMessages(userClient, channels, start, os.Args[1])
+	count := loopInAllChannels(userClient, channels, start, os.Args[1])
 	postEndMessage(botClient, start, ts, count)
 }
