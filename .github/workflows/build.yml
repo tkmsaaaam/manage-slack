@@ -8,6 +8,7 @@ on:
       - '**/*.go'
       - 'go.mod'
       - 'go.sum'
+      - '.github/workflows'
       - '!.github/workflows/manage_action.yml'
 permissions: {}
 jobs:
