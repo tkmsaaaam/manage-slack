@@ -26,10 +26,10 @@ jobs:
       - name: Restore Cache
         uses: actions/cache/restore@v3
         with:
-          path: ${{ github.workspace }}/${{ github.event.repository.name }}
-          key: ${{ runner.os }}-go-${{ github.sha }}
+          path: ${{ github.workspace }}/main
+          key: ${{ runner.os }}-go-main-${{ github.sha }}
       - name: Execute
-        run: ${{ github.workspace }}/${{ github.event.repository.name }} $DAYS
+        run: ${{ github.workspace }}/main $DAYS
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
           SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
