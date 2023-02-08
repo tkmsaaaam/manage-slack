@@ -47,17 +47,26 @@ func deleteMessage(client *slack.Client, id string, ts string) {
 
 func loopInAllChannels(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
 	count := 0
-	days, _ := strconv.Atoi(daysStr)
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		fmt.Println(err)
+	}
 	for _, channel := range channels {
 		id := channel.ID
 		latest := strconv.FormatInt(now.AddDate(0, 0, -days).Unix(), 10)
 		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest}
-		res, _ := client.GetConversationHistory(&params)
+		res, err := client.GetConversationHistory(&params)
+		if err != nil {
+			fmt.Println(err)
+		}
 		for _, message := range res.Messages {
 			count++
 			if message.ReplyCount != 0 {
 				repliesParams := slack.GetConversationRepliesParameters{ChannelID: id, Timestamp: message.Msg.Timestamp}
-				replies, _, _, _ := client.GetConversationReplies(&repliesParams)
+				replies, _, _, err := client.GetConversationReplies(&repliesParams)
+				if err != nil {
+					fmt.Println(err)
+				}
 				for _, reply := range replies {
 					count++
 					deleteMessage(client, id, reply.Msg.Timestamp)
