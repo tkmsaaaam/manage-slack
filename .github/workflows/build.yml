@@ -6,13 +6,15 @@ on:
       - main
     paths:
       - 'main.go'
+      - 'daily.go'
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/build.yml'
       - '.github/workflows/go.yml'
+      - '.github/workflows/daily.yml'
 permissions: {}
 jobs:
-  build:
+  build-main:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,3 +36,25 @@ jobs:
         with:
           path: ${{ github.workspace }}/main
           key: ${{ runner.os }}-go-main-${{ github.sha }}
+  build-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: "go.mod"
+      - name: setup cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Build
+        run: go build daily.go
+      - name: Add cache
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ github.workspace }}/daily
+          key: ${{ runner.os }}-go-daily-${{ github.sha }}

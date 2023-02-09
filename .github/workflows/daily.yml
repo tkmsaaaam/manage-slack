@@ -1,0 +1,24 @@
+name: Daily
+permissions: {}
+on:
+  schedule:
+    - cron: '13 13 * * *'
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+jobs:
+  script:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Restore Cache
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ github.workspace }}/daily
+          key: ${{ runner.os }}-go-daily-${{ github.sha }}
+      - name: Execute
+        run: ${{ github.workspace }}/daily
+        env:
+          SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
+          SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
