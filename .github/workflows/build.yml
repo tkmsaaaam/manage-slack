@@ -5,11 +5,11 @@ on:
     branches:
       - main
     paths:
-      - '**/*.go'
+      - 'main.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/workflows'
-      - '!.github/workflows/manage_action.yml'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/go.yml'
 permissions: {}
 jobs:
   build:
