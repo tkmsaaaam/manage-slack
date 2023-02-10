@@ -10,12 +10,12 @@ import (
 )
 
 type User struct {
-	name string
+	name  string
 	count int
 }
 
 type Channel struct {
-	name string
+	name  string
 	Users []User
 }
 
