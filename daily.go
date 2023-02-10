@@ -48,6 +48,9 @@ func main() {
 	message += yesterDay.Format("2006-01-02") + "\n"
 	message += strconv.FormatInt(int64(count), 10) + "\n"
 	for _, cs := range cs {
+		if len(cs.Users) == 0 {
+			continue
+		}
 		message += "\n" + cs.name + "\n"
 		for _, user := range cs.Users {
 			message += user.name + " : " + strconv.FormatInt(int64(user.count), 10) + "\n"
