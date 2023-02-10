@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -44,6 +45,7 @@ func main() {
 		}
 		cs = append(cs, c)
 	}
+	sort.Slice(cs, func(i, j int) bool { return cs[i].name < cs[j].name })
 	var message string
 	message += yesterDay.Format("2006-01-02") + "\n"
 	message += strconv.FormatInt(int64(count), 10) + "\n"
@@ -51,6 +53,7 @@ func main() {
 		if len(cs.Users) == 0 {
 			continue
 		}
+		sort.Slice(cs.Users, func(i, j int) bool { return cs.Users[i].count > cs.Users[j].count })
 		message += "\n" + cs.name + "\n"
 		for _, user := range cs.Users {
 			message += user.name + " : " + strconv.FormatInt(int64(user.count), 10) + "\n"
