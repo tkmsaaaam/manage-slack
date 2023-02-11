@@ -23,7 +23,7 @@ type Channel struct {
 func main() {
 	botClient := slack.New(os.Getenv("SLACK_OAUTH_BOT_TOKEN"))
 	userClient := slack.New(os.Getenv("SLACK_OAUTH_USER_TOKEN"))
-	channels, _, err := userClient.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
+	conversations, _, err := userClient.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -32,30 +32,30 @@ func main() {
 	yesterDay := now.AddDate(0, 0, -1)
 	oldest := strconv.FormatInt(time.Date(yesterDay.Year(), yesterDay.Month(), yesterDay.Day(), 0, 0, 0, 0, yesterDay.Location()).Unix(), 10)
 	latest := strconv.FormatInt(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix(), 10)
-	var cs []Channel
+	var channels []Channel
 	var count int
-	for _, channel := range channels {
-		id := channel.ID
+	for _, conversation := range conversations {
+		id := conversation.ID
 		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest, Oldest: oldest}
-		res, _ := userClient.GetConversationHistory(&params)
-		c := Channel{name: channel.Name}
-		for _, message := range res.Messages {
+		conversationHistory, _ := userClient.GetConversationHistory(&params)
+		channel := Channel{name: conversation.Name}
+		for _, message := range conversationHistory.Messages {
 			count++
-			addUser(&c, message)
+			addUser(&channel, message)
 		}
-		cs = append(cs, c)
+		channels = append(channels, channel)
 	}
-	sort.Slice(cs, func(i, j int) bool { return cs[i].name < cs[j].name })
+	sort.Slice(channels, func(i, j int) bool { return channels[i].name < channels[j].name })
 	var message string
 	message += yesterDay.Format("2006-01-02") + "\n"
 	message += strconv.FormatInt(int64(count), 10) + "\n"
-	for _, cs := range cs {
-		if len(cs.Users) == 0 {
+	for _, channel := range channels {
+		if len(channel.Users) == 0 {
 			continue
 		}
-		sort.Slice(cs.Users, func(i, j int) bool { return cs.Users[i].count > cs.Users[j].count })
-		message += "\n" + cs.name + "\n"
-		for _, user := range cs.Users {
+		sort.Slice(channel.Users, func(i, j int) bool { return channel.Users[i].count > channel.Users[j].count })
+		message += "\n" + channel.name + "\n"
+		for _, user := range channel.Users {
 			message += user.name + " : " + strconv.FormatInt(int64(user.count), 10) + "\n"
 		}
 	}
