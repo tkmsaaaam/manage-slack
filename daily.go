@@ -41,7 +41,7 @@ func main() {
 		channel := Channel{name: conversation.Name}
 		for _, message := range conversationHistory.Messages {
 			count++
-			addUser(&channel, message)
+			addUser(&channel, message, conversationHistory.Messages)
 		}
 		channels = append(channels, channel)
 	}
@@ -62,12 +62,22 @@ func main() {
 	botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true))
 }
 
-func addUser(channel *Channel, message slack.Message) {
+func addUser(channel *Channel, message slack.Message, messages []slack.Message) {
 	var name string
 	if message.Msg.Username != "" {
 		name = message.Msg.Username
-	} else if message.BotProfile != nil {
+	} else if message.BotProfile != nil && message.BotProfile.Name != "" {
 		name = message.BotProfile.Name
+	} else {
+		for _, m := range messages {
+			if m.ThreadTimestamp == message.ThreadTimestamp {
+				if m.Msg.Username != "" {
+					name = m.Msg.Username
+				} else if m.BotProfile != nil && m.BotProfile.Name != "" {
+					name = m.BotProfile.Name
+				}
+			}
+		}
 	}
 	for i, user := range channel.Users {
 		if user.name == name {
