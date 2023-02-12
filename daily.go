@@ -48,6 +48,7 @@ func main() {
 	sort.Slice(channels, func(i, j int) bool { return channels[i].name < channels[j].name })
 	var message string
 	message += yesterDay.Format("2006-01-02") + "\n"
+	message += yesterDay.Format("Monday") + "\n"
 	message += strconv.FormatInt(int64(count), 10) + "\n"
 	for _, channel := range channels {
 		if len(channel.Users) == 0 {
