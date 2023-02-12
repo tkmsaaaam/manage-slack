@@ -65,18 +65,11 @@ func main() {
 
 func addUser(channel *Channel, message slack.Message, messages []slack.Message) {
 	var name string
-	if message.Msg.Username != "" {
-		name = message.Msg.Username
-	} else if message.BotProfile != nil && message.BotProfile.Name != "" {
-		name = message.BotProfile.Name
-	} else {
+	name = setName(name, message)
+	if name == "" {
 		for _, m := range messages {
 			if m.ThreadTimestamp == message.ThreadTimestamp {
-				if m.Msg.Username != "" {
-					name = m.Msg.Username
-				} else if m.BotProfile != nil && m.BotProfile.Name != "" {
-					name = m.BotProfile.Name
-				}
+				name = setName(name, m)
 			}
 		}
 	}
@@ -87,4 +80,13 @@ func addUser(channel *Channel, message slack.Message, messages []slack.Message) 
 		}
 	}
 	channel.Users = append(channel.Users, User{name: name, count: 1})
+}
+
+func setName(name string, message slack.Message) string {
+	if message.Msg.Username != "" {
+		name = message.Msg.Username
+	} else if message.BotProfile != nil && message.BotProfile.Name != "" {
+		name = message.BotProfile.Name
+	}
+	return name
 }
