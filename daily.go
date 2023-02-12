@@ -62,18 +62,18 @@ func main() {
 	botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true))
 }
 
-func addUser(c *Channel, message slack.Message) {
+func addUser(channel *Channel, message slack.Message) {
 	var name string
 	if message.Msg.Username != "" {
 		name = message.Msg.Username
 	} else if message.BotProfile != nil {
 		name = message.BotProfile.Name
 	}
-	for i, user := range c.Users {
+	for i, user := range channel.Users {
 		if user.name == name {
-			c.Users[i] = User{name: user.name, count: user.count + 1}
+			channel.Users[i] = User{name: user.name, count: user.count + 1}
 			return
 		}
 	}
-	c.Users = append(c.Users, User{name: name, count: 1})
+	channel.Users = append(channel.Users, User{name: name, count: 1})
 }
