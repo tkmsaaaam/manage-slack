@@ -63,13 +63,13 @@ func main() {
 	botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true))
 }
 
-func addUser(channel *Channel, message slack.Message, messages []slack.Message) {
+func addUser(channel *Channel, message slack.Message, threads []slack.Message) {
 	var name string
 	name = setName(name, message)
 	if name == "" {
-		for _, m := range messages {
-			if m.ThreadTimestamp == message.ThreadTimestamp {
-				name = setName(name, m)
+		for _, thread := range threads {
+			if thread.ThreadTimestamp == message.ThreadTimestamp {
+				name = setName(name, thread)
 			}
 		}
 	}
