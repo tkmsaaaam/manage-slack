@@ -17,6 +17,7 @@ type User struct {
 
 type Channel struct {
 	name  string
+	id    string
 	Users []User
 }
 
@@ -37,7 +38,7 @@ func main() {
 	for _, conversation := range conversations {
 		params := slack.GetConversationHistoryParameters{ChannelID: conversation.ID, Limit: 1000, Latest: latest, Oldest: oldest}
 		conversationHistory, _ := userClient.GetConversationHistory(&params)
-		channel := Channel{name: conversation.Name}
+		channel := Channel{name: conversation.Name, id: conversation.ID}
 		for _, message := range conversationHistory.Messages {
 			count++
 			addUser(&channel, message, conversationHistory.Messages)
@@ -53,12 +54,12 @@ func main() {
 			continue
 		}
 		sort.Slice(channel.Users, func(i, j int) bool { return channel.Users[i].count > channel.Users[j].count })
-		message += "\n" + channel.name + "\n"
+		message += "\n<#" + channel.id + ">\n"
 		for _, user := range channel.Users {
 			message += user.name + " : " + strconv.FormatInt(int64(user.count), 10) + "\n"
 		}
 	}
-	botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true))
+	botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, false))
 }
 
 func addUser(channel *Channel, message slack.Message, threads []slack.Message) {
