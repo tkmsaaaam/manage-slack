@@ -35,8 +35,7 @@ func main() {
 	var channels []Channel
 	var count int
 	for _, conversation := range conversations {
-		id := conversation.ID
-		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest, Oldest: oldest}
+		params := slack.GetConversationHistoryParameters{ChannelID: conversation.ID, Limit: 1000, Latest: latest, Oldest: oldest}
 		conversationHistory, _ := userClient.GetConversationHistory(&params)
 		channel := Channel{name: conversation.Name}
 		for _, message := range conversationHistory.Messages {
@@ -46,10 +45,9 @@ func main() {
 		channels = append(channels, channel)
 	}
 	sort.Slice(channels, func(i, j int) bool { return channels[i].name < channels[j].name })
+
 	var message string
-	message += yesterDay.Format("2006-01-02") + "\n"
-	message += yesterDay.Format("Monday") + "\n"
-	message += strconv.FormatInt(int64(count), 10) + "\n"
+	message += yesterDay.Format("2006-01-02") + "\n" + yesterDay.Format("Monday") + "\n" + strconv.FormatInt(int64(count), 10) + "\n"
 	for _, channel := range channels {
 		if len(channel.Users) == 0 {
 			continue
