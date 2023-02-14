@@ -10,7 +10,7 @@ import (
 	"github.com/slack-go/slack"
 )
 
-type User struct {
+type Site struct {
 	name  string
 	count int
 }
@@ -18,7 +18,7 @@ type User struct {
 type Channel struct {
 	name  string
 	id    string
-	Users []User
+	Sites []Site
 }
 
 func main() {
@@ -50,12 +50,12 @@ func main() {
 	var message string
 	message += yesterDay.Format("2006-01-02") + "\n" + yesterDay.Format("Monday") + "\n" + strconv.FormatInt(int64(count), 10) + "\n"
 	for _, channel := range channels {
-		if len(channel.Users) == 0 {
+		if len(channel.Sites) == 0 {
 			continue
 		}
-		sort.Slice(channel.Users, func(i, j int) bool { return channel.Users[i].count > channel.Users[j].count })
+		sort.Slice(channel.Sites, func(i, j int) bool { return channel.Sites[i].count > channel.Sites[j].count })
 		message += "\n<#" + channel.id + ">\n"
-		for _, user := range channel.Users {
+		for _, user := range channel.Sites {
 			message += user.name + " : " + strconv.FormatInt(int64(user.count), 10) + "\n"
 		}
 	}
@@ -72,13 +72,13 @@ func addUser(channel *Channel, message slack.Message, threads []slack.Message) {
 			}
 		}
 	}
-	for i, user := range channel.Users {
+	for i, user := range channel.Sites {
 		if user.name == name {
-			channel.Users[i] = User{name: user.name, count: user.count + 1}
+			channel.Sites[i] = Site{name: user.name, count: user.count + 1}
 			return
 		}
 	}
-	channel.Users = append(channel.Users, User{name: name, count: 1})
+	channel.Sites = append(channel.Sites, Site{name: name, count: 1})
 }
 
 func setName(name string, message slack.Message) string {
