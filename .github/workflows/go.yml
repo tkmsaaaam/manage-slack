@@ -28,7 +28,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/main
           key: ${{ runner.os }}-go-main-${{ github.sha }}
-      - name: Execute
+      - name: Execute Delete messages
         run: ${{ github.workspace }}/main $DAYS
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}

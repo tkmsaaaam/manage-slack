@@ -16,7 +16,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/daily
           key: ${{ runner.os }}-go-daily-${{ github.sha }}
-      - name: Execute
+      - name: Execute Post Daily report
         run: ${{ github.workspace }}/daily
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
