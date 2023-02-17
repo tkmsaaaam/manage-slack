@@ -10,8 +10,6 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/build.yml'
-      - '.github/workflows/go.yml'
-      - '.github/workflows/daily.yml'
 permissions: {}
 jobs:
   build-main:
