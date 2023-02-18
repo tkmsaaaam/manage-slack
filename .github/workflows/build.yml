@@ -15,6 +15,8 @@ permissions:
 jobs:
   clear-cache:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Extension install
         run: gh extension install actions/gh-actions-cache
