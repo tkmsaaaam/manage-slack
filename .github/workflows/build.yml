@@ -21,7 +21,7 @@ jobs:
       - name: Extension install
         run: gh extension install actions/gh-actions-cache
       - name: run
-        run: gh actions-cache list -R $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{if(index($1,"Linux-go-daily")!=0 || index($1,"Linux-go-main") != 0 ){print $1}}' | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY
+        run: gh actions-cache list -R $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{if(index($1,"Linux-go-daily")!=0 || index($1,"Linux-go-main") != 0 ){print $1}}' | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY --confirm
   build-main:
     runs-on: ubuntu-latest
     needs: clear-cache
