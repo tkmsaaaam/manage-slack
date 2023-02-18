@@ -15,7 +15,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ${{ github.workspace }}/daily
-          key: ${{ runner.os }}-go-daily-${{ github.sha }}
+          key: ${{ runner.os }}-go-daily
       - name: Execute Post Daily report
         run: ${{ github.workspace }}/daily
         env:

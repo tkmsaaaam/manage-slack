@@ -10,8 +10,16 @@ on:
       - 'go.mod'
       - 'go.sum'
       - '.github/workflows/build.yml'
-permissions: {}
+permissions:
+  actions: write
 jobs:
+  clear-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extension install
+        run: gh extension install actions/gh-actions-cache
+      - name: run
+        run: gh actions-cache list -R $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{if(index($1,"Linux-go-daily")!=0 || index($1,"Linux-go-main") != 0 ){print $1}}' | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY
   build-main:
     runs-on: ubuntu-latest
     steps:
@@ -33,7 +41,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/main
-          key: ${{ runner.os }}-go-main-${{ github.sha }}
+          key: ${{ runner.os }}-go-main
   build-daily:
     runs-on: ubuntu-latest
     steps:
@@ -55,4 +63,4 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/daily
-          key: ${{ runner.os }}-go-daily-${{ github.sha }}
+          key: ${{ runner.os }}-go-daily
