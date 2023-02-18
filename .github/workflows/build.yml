@@ -20,11 +20,18 @@ jobs:
     steps:
       - name: Extension install
         run: gh extension install actions/gh-actions-cache
-      - name: run
+      - name: Remove Cache
         env:
           MAINCACHE: ${{ runner.os }}-go-main
           DAILYCACHE: ${{ runner.os }}-go-daily
-        run: gh actions-cache list -R $GITHUB_REPOSITORY | xargs -I@ echo @ | awk -v dailycache=$DAILYCACHE -v maincache=$MAINCACHE  -v repo=$GITHUB_REPOSITORY '{if(index($1,maincache)!=0 || index($1,dailycache) != 0 ){gh actions-cache delete $1 -R repo --confirm}}'
+        run: |
+          gh actions-cache list -R $GITHUB_REPOSITORY \
+          | xargs -I@ echo @ \
+          | awk \
+          -v dailycache=$DAILYCACHE \
+          -v maincache=$MAINCACHE \
+          '{if(index($1,maincache)!=0 || index($1,dailycache) != 0 ){print $1}}' \
+          | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY --confirm
   build-main:
     runs-on: ubuntu-latest
     needs: clear-cache
