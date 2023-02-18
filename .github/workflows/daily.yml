@@ -10,6 +10,7 @@ jobs:
   script:
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    if: ${{ github.event.schedule || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
