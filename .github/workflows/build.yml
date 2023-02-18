@@ -22,6 +22,7 @@ jobs:
         run: gh actions-cache list -R $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{if(index($1,"Linux-go-daily")!=0 || index($1,"Linux-go-main") != 0 ){print $1}}' | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY
   build-main:
     runs-on: ubuntu-latest
+    needs: clear-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -44,6 +45,7 @@ jobs:
           key: ${{ runner.os }}-go-main
   build-daily:
     runs-on: ubuntu-latest
+    needs: clear-cache
     steps:
       - name: Checkout
         uses: actions/checkout@v3
