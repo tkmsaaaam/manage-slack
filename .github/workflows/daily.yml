@@ -11,14 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     if: ${{ github.event.schedule || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      EXEC_FILEPATH: ${{ github.workspace }}/daily
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
         with:
-          path: ${{ github.workspace }}/daily
+          path: $EXEC_FILEPATH
           key: ${{ runner.os }}-go-daily
       - name: Execute Post Daily report
-        run: ${{ github.workspace }}/daily
+        run: $EXEC_FILEPATH
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
           SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}

@@ -23,14 +23,16 @@ jobs:
       DAYS: ${{ github.event.inputs.days || 3 }}
     timeout-minutes: ${{ github.event.inputs.timeout || 3 }}
     if: ${{ github.event.schedule ||  github.event.workflow_dispatch || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      EXEC_FILEPATH: ${{ github.workspace }}/main
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
         with:
-          path: ${{ github.workspace }}/main
+          path: $EXEC_FILEPATH
           key: ${{ runner.os }}-go-main
       - name: Execute Delete messages
-        run: ${{ github.workspace }}/main $DAYS
+        run: $EXEC_FILEPATH $DAYS
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
           SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
