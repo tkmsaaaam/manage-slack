@@ -21,10 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DAYS: ${{ github.event.inputs.days || 3 }}
+      EXEC_FILEPATH: ${{ github.workspace }}/main
     timeout-minutes: ${{ github.event.inputs.timeout || 3 }}
     if: ${{ github.event.schedule ||  github.event.workflow_dispatch || github.event.workflow_run.conclusion == 'success' }}
-    env:
-      EXEC_FILEPATH: ${{ github.workspace }}/main
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
