@@ -28,10 +28,10 @@ jobs:
       - name: Restore Cache
         uses: actions/cache/restore@v3
         with:
-          path: $EXEC_FILEPATH
+          path: ${{ env.EXEC_FILEPATH }}
           key: ${{ runner.os }}-go-main
       - name: Execute Delete messages
-        run: $EXEC_FILEPATH $DAYS
+        run: ${{ env.EXEC_FILEPATH }} $DAYS
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
           SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}

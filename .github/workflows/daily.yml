@@ -18,10 +18,10 @@ jobs:
       - name: Restore Cache
         uses: actions/cache/restore@v3
         with:
-          path: $EXEC_FILEPATH
+          path: ${{ env.EXEC_FILEPATH }}
           key: ${{ runner.os }}-go-daily
       - name: Execute Post Daily report
-        run: $EXEC_FILEPATH
+        run: ${{ env.EXEC_FILEPATH }}
         env:
           SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
           SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
