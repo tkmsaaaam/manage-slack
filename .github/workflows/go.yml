@@ -23,7 +23,7 @@ jobs:
       DAYS: ${{ github.event.inputs.days || 3 }}
       EXEC_FILEPATH: ${{ github.workspace }}/main
     timeout-minutes: ${{ github.event.inputs.timeout || 3 }}
-    if: ${{ github.event.schedule ||  github.event.workflow_dispatch || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'schedule' ||  github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Restore Cache
         uses: actions/cache/restore@v3
