@@ -12,9 +12,6 @@ on:
       - '.github/workflows/build.yml'
 permissions:
   actions: write
-env:
-  MAINCACHE: ${{ runner.os }}-go-main
-  DAILYCACHE: ${{ runner.os }}-go-daily
 jobs:
   clear-cache:
     runs-on: ubuntu-latest
@@ -24,6 +21,9 @@ jobs:
       - name: Extension install
         run: gh extension install actions/gh-actions-cache
       - name: Remove Cache
+        env:
+          MAINCACHE: ${{ runner.os }}-go-main
+          DAILYCACHE: ${{ runner.os }}-go-daily
         run: |
           gh actions-cache list -R $GITHUB_REPOSITORY \
           | xargs -I@ echo @ \
@@ -54,7 +54,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/main
-          key: $MAINCACHE
+          key: ${{ runner.os }}-go-main
   build-daily:
     runs-on: ubuntu-latest
     needs: clear-cache
@@ -77,4 +77,4 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/daily
-          key: $DAILYCACHE
+          key: ${{ runner.os }}-go-daily
