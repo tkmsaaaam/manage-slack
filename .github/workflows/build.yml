@@ -70,7 +70,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/daily
-          key: ${{ runner.os }}-go-main-${{ hashFiles('**/go.sum', 'daily.go') }}
+          key: ${{ runner.os }}-go-daily-${{ hashFiles('**/go.sum', 'daily.go') }}
       - name: Extension install
         if: steps.cache-hit.outputs.cache-hit != 'false'
         env:
