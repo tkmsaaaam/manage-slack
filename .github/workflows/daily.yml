@@ -19,6 +19,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ${{ env.EXEC_FILEPATH }}
+          key: ${{ runner.os }}-go-daily
           restore-keys: ${{ runner.os }}-go-daily
       - name: Execute Post Daily report
         run: ${{ env.EXEC_FILEPATH }}
