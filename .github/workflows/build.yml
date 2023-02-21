@@ -54,7 +54,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
         if: steps.cache-hit.outputs.cache-hit != 'false'
-        run: rm main && go build main.go
+        run: go build main.go
       - name: Add cache
         uses: actions/cache/save@v3
         with:
@@ -101,7 +101,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
         if: steps.cache-hit.outputs.cache-hit != 'false'
-        run: rm daily && go build daily.go
+        run: go build daily.go
       - name: Add cache
         if: steps.cache-hit.outputs.cache-hit != 'false'
         uses: actions/cache/save@v3
