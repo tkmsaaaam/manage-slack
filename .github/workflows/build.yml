@@ -24,8 +24,10 @@ jobs:
         with:
           path: ${{ github.workspace }}/main
           key: ${{ runner.os }}-go-main-${{ hashFiles('**/go.sum', 'main.go') }}
+      - name: Check continue job
+        if: steps.cache-hit.outputs.cache-hit != 'true'
+        run: exit 0
       - name: Extension install
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh extension install actions/gh-actions-cache
@@ -67,8 +69,10 @@ jobs:
         with:
           path: ${{ github.workspace }}/daily
           key: ${{ runner.os }}-go-daily-${{ hashFiles('**/go.sum', 'daily.go') }}
+      - name: Check continue job
+        if: steps.cache-hit.outputs.cache-hit != 'true'
+        run: exit 0
       - name: Extension install
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh extension install actions/gh-actions-cache
