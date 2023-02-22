@@ -30,7 +30,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh extension install actions/gh-actions-cache
       - name: Remove old cache
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         env:
           MAINCACHE: ${{ runner.os }}-go-main
         run: |
@@ -41,19 +40,16 @@ jobs:
           '{if(index($1,maincache) != 0){print $1}}' \
           | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY --confirm
       - name: Setup Go
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         uses: actions/setup-go@v3
         with:
           go-version-file: "go.mod"
       - name: setup cache
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         run: go build main.go
       - name: Add cache
         uses: actions/cache/save@v3
@@ -77,7 +73,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh extension install actions/gh-actions-cache
       - name: Remove old cache
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         env:
           DAILYCACHE: ${{ runner.os }}-go-daily
         run: |
@@ -88,22 +83,18 @@ jobs:
           '{if(index($1,dailycache) != 0){print $1}}' \
           | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY --confirm
       - name: Setup Go
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         uses: actions/setup-go@v3
         with:
           go-version-file: "go.mod"
       - name: setup cache
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         run: go build daily.go
       - name: Add cache
-        if: steps.cache-hit.outputs.cache-hit != 'false'
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/daily
