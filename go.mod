@@ -1,6 +1,6 @@
 module github.com/tkmsaaaam/manage-slack
 
-go 1.19
+go 1.20
 
 require github.com/slack-go/slack v0.12.1
 
