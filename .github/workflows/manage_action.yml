@@ -5,6 +5,12 @@ on:
   schedule:
     - cron: '12 12 1 * *'
   workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - "main"
+    paths:
+      - ".github/workflows/manage_action.yml"
 jobs:
   script:
     runs-on: ubuntu-latest
