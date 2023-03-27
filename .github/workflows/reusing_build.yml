@@ -16,19 +16,19 @@ jobs:
         uses: actions/checkout@v3
       - name: Check Cache Hit
         id: cache-hit
-        uses: actions/cache@v3
+        uses: actions/cache/restore@v3
         with:
           path: ${{ github.workspace }}/${{ env.FILE_NAME }}
           key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
       - name: Extension install
-        if: steps.cache-hit.outputs.cache-hit == 'false'
+        if: steps.cache-hit.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh extension install actions/gh-actions-cache
       - name: Remove old cache
-        if: steps.cache-hit.outputs.cache-hit == 'false'
+        if: steps.cache-hit.outputs.cache-hit != 'true'
         env:
-          MAINCACHE: ${{ runner.os }}-go-${{ env.FILE_NAME }}
+          MAINCACHE: ${{ runner.os }}-go-${{ env.FILE_NAME }}-
         run: |
           gh actions-cache list -R $GITHUB_REPOSITORY \
           | xargs -I@ echo @ \
@@ -37,22 +37,22 @@ jobs:
           '{if(index($1,maincache) != 0){print $1}}' \
           | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY --confirm
       - name: Setup Go
-        if: steps.cache-hit.outputs.cache-hit == 'false'
+        if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/setup-go@v3
         with:
           go-version-file: "go.mod"
       - name: setup cache
-        if: steps.cache-hit.outputs.cache-hit == 'false'
+        if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
-        if: steps.cache-hit.outputs.cache-hit == 'false'
+        if: steps.cache-hit.outputs.cache-hit != 'true'
         run: GOFILE=${{ env.FILE_NAME }} && go build $GOFILE
       - name: Add cache
-        if: steps.cache-hit.outputs.cache-hit == 'false'
+        if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/${{ env.FILE_NAME }}
