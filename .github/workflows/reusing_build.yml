@@ -50,7 +50,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
         if: steps.cache-hit.outputs.cache-hit != 'true'
-        run: GOFILE=${{ env.FILE_NAME }} && go build $GOFILE
+        run: GOFILE=${{ env.FILE_NAME }}.go && go build $GOFILE
       - name: Add cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
