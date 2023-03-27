@@ -14,10 +14,10 @@ permissions:
   actions: write
 jobs:
   build-main:
-    uses: ./.github/workflows/reusing_build.yml
+    uses: tkmsaaaam/count-commits-js/.github/workflows/reusing_build.yml@main
     secrets:
       FILE_NAME: main
   build-daily:
-    uses: ./.github/workflows/reusing_build.yml
+    uses: tkmsaaaam/count-commits-js/.github/workflows/reusing_build.yml@main
     secrets:
       FILE_NAME: daily
