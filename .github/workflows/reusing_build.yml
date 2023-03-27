@@ -19,7 +19,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/${{ env.FILE_NAME }}
-          key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', ${{ env.FILE_NAME }})) }}
+          key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
       - name: Extension install
         if: steps.cache-hit.outputs.cache-hit == 'false'
         env:
@@ -56,4 +56,4 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/${{ env.FILE_NAME }}
-          key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', ${{ env.FILE_NAME }})) }}
+          key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
