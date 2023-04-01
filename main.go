@@ -81,11 +81,11 @@ func loopInAllChannels(client *slack.Client, channels []slack.Channel, now time.
 }
 
 func main() {
-	botClient := slack.New(os.Getenv("SLACK_OAUTH_BOT_TOKEN"))
-	userClient := slack.New(os.Getenv("SLACK_OAUTH_USER_TOKEN"))
+	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
+	userClient := slack.New(os.Getenv("SLACK_USER_TOKEN"))
 	start := time.Now()
 	ts := postStartMessage(botClient)
 	channels := getChannels(userClient)
-	count := loopInAllChannels(userClient, channels, start, os.Args[1])
+	count := loopInAllChannels(userClient, channels, start, os.Getenv("DAYS"))
 	postEndMessage(botClient, start, ts, count)
 }

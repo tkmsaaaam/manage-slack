@@ -24,8 +24,8 @@ type Channel struct {
 }
 
 func main() {
-	botClient := slack.New(os.Getenv("SLACK_OAUTH_BOT_TOKEN"))
-	userClient := slack.New(os.Getenv("SLACK_OAUTH_USER_TOKEN"))
+	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
+	userClient := slack.New(os.Getenv("SLACK_USER_TOKEN"))
 	conversations, _, err := userClient.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
 		fmt.Println(err)
