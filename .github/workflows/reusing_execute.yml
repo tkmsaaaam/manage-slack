@@ -1,0 +1,50 @@
+name: Reusing Execute
+on:
+  workflow_call:
+    inputs:
+      cacheName:
+        required: true
+        type: string
+      days:
+        required: false
+        type: string
+      fileName:
+        required: true
+        type: string
+      timeout:
+        required: false
+        type: string
+    secrets:
+      CITY_ID:
+        required: false
+      GH_TOKEN:
+        required: false
+      GH_USER_NAME:
+        required: false
+      SLACK_BOT_TOKEN:
+        required: true
+      SLACK_CHANNEL_ID:
+        required: true
+      SLACK_USER_TOKEN:
+        required: false
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout || 10 }}
+    steps:
+      - name: Restore Cache
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ github.workspace }}/${{ inputs.fileName }}
+          key: ${{ runner.os }}-go-${{ inputs.cacheName }}
+          restore-keys: ${{ runner.os }}-go-${{ inputs.cacheName }}
+      - name: Execute Post Daily report
+        run: ${{ github.workspace }}/${{ inputs.fileName }}
+        env:
+          CITY_ID: ${{ secrets.CITY_ID }}
+          DAYS: ${{ inputs.days }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_USER_NAME: ${{ secrets.GH_USER_NAME }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          SLACK_USER_TOKEN: ${{ secrets.SLACK_USER_TOKEN }}

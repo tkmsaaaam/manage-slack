@@ -9,21 +9,11 @@ on:
     types: [completed]
 jobs:
   script:
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    if: ${{ github.event_name == 'schedule' ||  github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    env:
-      EXEC_FILEPATH: ${{ github.workspace }}/daily
-    steps:
-      - name: Restore Cache
-        uses: actions/cache/restore@v3
-        with:
-          path: ${{ env.EXEC_FILEPATH }}
-          key: ${{ runner.os }}-go-daily
-          restore-keys: ${{ runner.os }}-go-daily-
-      - name: Execute Post Daily report
-        run: ${{ env.EXEC_FILEPATH }}
-        env:
-          SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
-          SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+    uses: ./.github/workflows/reusing_execute.yml
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      SLACK_USER_TOKEN: ${{ secrets.SLACK_USER_TOKEN }}
+    with:
+      cacheName: daily
+      fileName: daily

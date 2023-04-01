@@ -18,22 +18,14 @@ on:
     types: [completed]
 jobs:
   script:
-    runs-on: ubuntu-latest
-    env:
-      DAYS: ${{ github.event.inputs.days || 3 }}
-      EXEC_FILEPATH: ${{ github.workspace }}/main
-    timeout-minutes: ${{ github.event.inputs.timeout || 3 }}
     if: ${{ github.event_name == 'schedule' ||  github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    steps:
-      - name: Restore Cache
-        uses: actions/cache/restore@v3
-        with:
-          path: ${{ env.EXEC_FILEPATH }}
-          key: ${{ runner.os }}-go-main
-          restore-keys: ${{ runner.os }}-go-main-
-      - name: Execute Delete messages
-        run: ${{ env.EXEC_FILEPATH }}
-        env:
-          SLACK_OAUTH_BOT_TOKEN: ${{ secrets.SLACK_OAUTH_BOT_TOKEN }}
-          SLACK_OAUTH_USER_TOKEN: ${{ secrets.SLACK_OAUTH_USER_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+    uses: ./.github/workflows/reusing_execute.yml
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      SLACK_USER_TOKEN: ${{ secrets.SLACK_USER_TOKEN }}
+    with:
+      days: ${{ github.event.inputs.days || 3 }}
+      cacheName: main
+      fileName: main
+      timeout: ${{ github.event.inputs.timeout }}
