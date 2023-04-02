@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: manage actions
         run: |
-          gh workflow list --repo $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{print $1}' | xargs -I% gh workflow disable % --repo $GITHUB_REPOSITORY
-          gh workflow list -a --repo $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{print $1}' | xargs -I% gh workflow enable % --repo $GITHUB_REPOSITORY
+          gh workflow list --repo $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{print $NF}' | xargs -I% gh workflow disable % --repo $GITHUB_REPOSITORY
+          gh workflow list -a --repo $GITHUB_REPOSITORY | xargs -I@ echo @ | awk '{print $NF}' | xargs -I% gh workflow enable % --repo $GITHUB_REPOSITORY
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
