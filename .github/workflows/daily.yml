@@ -9,6 +9,7 @@ on:
     types: [completed]
 jobs:
   script:
+    if: ${{ github.event_name == 'schedule' ||  github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     uses: ./.github/workflows/reusing_execute.yml
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
