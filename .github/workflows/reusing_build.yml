@@ -10,11 +10,11 @@ on:
         required: false
 permissions:
   actions: write
-env:
-  FILE_NAME: ${{ secrets.FILE_NAME || github.event.inputs.FILE_NAME }}
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FILE_NAME: ${{ secrets.FILE_NAME || github.event.inputs.FILE_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
