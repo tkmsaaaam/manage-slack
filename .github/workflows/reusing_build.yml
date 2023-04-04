@@ -1,13 +1,17 @@
 name: Reusing Build
 on:
   workflow_call:
+    inputs:
+      FILE_NAME:
+        type: string
+        required: false
     secrets:
       FILE_NAME:
-        required: true
+        required: false
 permissions:
   actions: write
 env:
-  FILE_NAME: ${{ secrets.FILE_NAME }}
+  FILE_NAME: ${{ github.event.inputs.FILE_NAME || secrets.FILE_NAME }}
 jobs:
   build:
     runs-on: ubuntu-latest

@@ -15,9 +15,9 @@ permissions:
 jobs:
   build-main:
     uses: ./.github/workflows/reusing_build.yml
-    secrets:
+    with:
       FILE_NAME: main
   build-daily:
     uses: ./.github/workflows/reusing_build.yml
-    secrets:
+    with:
       FILE_NAME: daily
