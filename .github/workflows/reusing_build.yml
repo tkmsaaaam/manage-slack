@@ -11,7 +11,7 @@ on:
 permissions:
   actions: write
 env:
-  FILE_NAME: ${{ github.event.inputs.FILE_NAME || secrets.FILE_NAME }}
+  FILE_NAME: ${{ secrets.FILE_NAME || github.event.inputs.FILE_NAME }}
 jobs:
   build:
     runs-on: ubuntu-latest
