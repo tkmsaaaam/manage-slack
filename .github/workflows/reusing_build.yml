@@ -4,14 +4,11 @@ on:
     inputs:
       FILE_NAME:
         type: string
-        required: false
-    secrets:
-      FILE_NAME:
-        required: false
+        required: true
 permissions:
   actions: write
 env:
-  FILE_NAME: ${{ inputs.FILE_NAME || secrets.FILE_NAME }}
+  FILE_NAME: ${{ inputs.FILE_NAME}}
 jobs:
   build:
     runs-on: ubuntu-latest
