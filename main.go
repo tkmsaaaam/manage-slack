@@ -11,7 +11,11 @@ import (
 	"github.com/slack-go/slack"
 )
 
-func getChannels(client *slack.Client) []slack.Channel {
+type SlackClient struct {
+	*slack.Client
+}
+
+func (client SlackClient) getChannels() []slack.Channel {
 	channels, _, err := client.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
 		fmt.Println(err)
@@ -85,7 +89,7 @@ func main() {
 	userClient := slack.New(os.Getenv("SLACK_USER_TOKEN"))
 	start := time.Now()
 	ts := postStartMessage(botClient)
-	channels := getChannels(userClient)
+	channels := SlackClient{userClient}.getChannels()
 	count := loopInAllChannels(userClient, channels, start, os.Getenv("DAYS"))
 	postEndMessage(botClient, start, ts, count)
 }
