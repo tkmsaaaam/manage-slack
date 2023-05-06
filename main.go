@@ -23,7 +23,7 @@ func (client SlackClient) getChannels() []slack.Channel {
 	return channels
 }
 
-func postStartMessage(client *slack.Client) string {
+func (client SlackClient) postStartMessage() string {
 	_, ts, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText("タスク実行を開始します", true))
 	if err != nil {
 		fmt.Println(err)
@@ -31,7 +31,7 @@ func postStartMessage(client *slack.Client) string {
 	return ts
 }
 
-func postEndMessage(client *slack.Client, start time.Time, ts string, count int) {
+func (client SlackClient) postEndMessage(start time.Time, ts string, count int) {
 	duration := time.Now().Sub(start)
 	avg := float64(count) / duration.Seconds()
 	message := "タスク実行を終了します\n" + duration.String() + "\n" + "count:" + strconv.FormatInt(int64(count), 10) + "\n" + "avg:" + strconv.FormatFloat(avg, 'f', -1, 64) + "/s"
@@ -41,7 +41,7 @@ func postEndMessage(client *slack.Client, start time.Time, ts string, count int)
 	}
 }
 
-func deleteMessage(client *slack.Client, id string, ts string) {
+func (client SlackClient) deleteMessage(id string, ts string) {
 	_, _, err := client.DeleteMessage(id, ts)
 	if err != nil {
 		fmt.Println(id + ":" + ts + ":" + err.Error())
@@ -51,7 +51,7 @@ func deleteMessage(client *slack.Client, id string, ts string) {
 	}
 }
 
-func loopInAllChannels(client *slack.Client, channels []slack.Channel, now time.Time, daysStr string) int {
+func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.Time, daysStr string) int {
 	count := 0
 	days, err := strconv.Atoi(daysStr)
 	if err != nil {
@@ -75,10 +75,10 @@ func loopInAllChannels(client *slack.Client, channels []slack.Channel, now time.
 				}
 				for _, reply := range replies {
 					count++
-					deleteMessage(client, id, reply.Msg.Timestamp)
+					client.deleteMessage(id, reply.Msg.Timestamp)
 				}
 			}
-			deleteMessage(client, id, message.Msg.Timestamp)
+			client.deleteMessage(id, message.Msg.Timestamp)
 		}
 	}
 	return count
@@ -88,8 +88,8 @@ func main() {
 	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 	userClient := slack.New(os.Getenv("SLACK_USER_TOKEN"))
 	start := time.Now()
-	ts := postStartMessage(botClient)
+	ts := SlackClient{botClient}.postStartMessage()
 	channels := SlackClient{userClient}.getChannels()
-	count := loopInAllChannels(userClient, channels, start, os.Getenv("DAYS"))
-	postEndMessage(botClient, start, ts, count)
+	count := SlackClient{userClient}.loopInAllChannels(channels, start, os.Getenv("DAYS"))
+	SlackClient{botClient}.postEndMessage(start, ts, count)
 }
