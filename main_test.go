@@ -1,10 +1,19 @@
 package main
 
 import (
+	_ "embed"
+	"net/http"
 	"testing"
 
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slacktest"
 )
+
+//go:embed testdata/users.conversations.json
+var usersConversations []byte
+
+//go:embed testdata/chat.postMessage.json
+var chatPostMessage []byte
 
 func TestGetChannels(t *testing.T) {
 	type args struct {
@@ -23,7 +32,13 @@ func TestGetChannels(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		client := slack.New("")
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/users.conversations", func(w http.ResponseWriter, r *http.Request) {
+				w.Write(usersConversations)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
 		t.Run(tt.name, func(t *testing.T) {
 			got := SlackClient{client}.getChannels()
 			if len(got) != len(tt.want) {
@@ -46,11 +61,17 @@ func TestPostStartMessage(t *testing.T) {
 		{
 			name: "PostStartMessage",
 			args: args{},
-			want: "",
+			want: "1503435956.000247",
 		},
 	}
 	for _, tt := range tests {
-		client := slack.New("")
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/chat.postMessage", func(w http.ResponseWriter, r *http.Request) {
+				w.Write(chatPostMessage)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
 		t.Run(tt.name, func(t *testing.T) {
 			got := SlackClient{client}.postStartMessage()
 			if got != tt.want {
