@@ -12,29 +12,28 @@ import (
 //go:embed testdata/users.conversations.json
 var usersConversations []byte
 
-//go:embed testdata/chat.postMessage.json
-var chatPostMessage []byte
-
 func TestGetChannels(t *testing.T) {
 	type args struct {
 		variables map[string]interface{}
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want []slack.Channel
+		name   string
+		args   args
+		apiRes []byte
+		want   []slack.Channel
 	}{
 		{
-			name: "channelIsNil",
-			args: args{},
-			want: []slack.Channel{},
+			name:   "channelIsNil",
+			args:   args{},
+			apiRes: usersConversations,
+			want:   []slack.Channel{},
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
-			c.Handle("/users.conversations", func(w http.ResponseWriter, r *http.Request) {
-				w.Write(usersConversations)
+			c.Handle("/users.conversations", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write([]byte(tt.apiRes))
 			})
 		})
 		ts.Start()
@@ -48,26 +47,31 @@ func TestGetChannels(t *testing.T) {
 	}
 }
 
+//go:embed testdata/chat.postMessage.json
+var chatPostMessage []byte
+
 func TestPostStartMessage(t *testing.T) {
 	type args struct {
 		variables map[string]interface{}
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want string
+		name   string
+		args   args
+		apiRes []byte
+		want   string
 	}{
 		{
-			name: "PostStartMessage",
-			args: args{},
-			want: "1503435956.000247",
+			name:   "PostStartMessage",
+			args:   args{},
+			apiRes: chatPostMessage,
+			want:   "1503435956.000247",
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
-			c.Handle("/chat.postMessage", func(w http.ResponseWriter, r *http.Request) {
-				w.Write(chatPostMessage)
+			c.Handle("/chat.postMessage", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes)
 			})
 		})
 		ts.Start()
