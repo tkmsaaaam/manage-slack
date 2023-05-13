@@ -33,7 +33,7 @@ func TestGetChannels(t *testing.T) {
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/users.conversations", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write([]byte(tt.apiRes))
+				w.Write(tt.apiRes)
 			})
 		})
 		ts.Start()
