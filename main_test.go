@@ -9,8 +9,11 @@ import (
 	"github.com/slack-go/slack/slacktest"
 )
 
-//go:embed testdata/users.conversations.json
-var usersConversations []byte
+//go:embed testdata/usersConversations/channelIsNil.json
+var channelIsNil []byte
+
+//go:embed testdata/usersConversations/channelIsNotNil.json
+var channelIsNotNil []byte
 
 func TestGetChannels(t *testing.T) {
 	type args struct {
@@ -26,8 +29,14 @@ func TestGetChannels(t *testing.T) {
 		{
 			name:   "channelIsNil",
 			args:   args{},
-			apiRes: usersConversations,
+			apiRes: channelIsNil,
 			want:   []slack.Channel{},
+		},
+		{
+			name:   "channelIsNotNil",
+			args:   args{},
+			apiRes: channelIsNotNil,
+			want:   []slack.Channel{{}},
 		},
 	}
 	for _, tt := range tests {
