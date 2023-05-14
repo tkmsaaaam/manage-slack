@@ -23,10 +23,6 @@ var channelIsNotNil []byte
 var usersConversationsError []byte
 
 func TestGetChannels(t *testing.T) {
-	type args struct {
-		variables map[string]interface{}
-	}
-
 	type want struct {
 		channels []slack.Channel
 		print    string
@@ -34,25 +30,21 @@ func TestGetChannels(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		args   args
 		apiRes []byte
 		want   want
 	}{
 		{
 			name:   "channelIsNil",
-			args:   args{},
 			apiRes: channelIsNil,
 			want:   want{channels: []slack.Channel{}, print: ""},
 		},
 		{
 			name:   "channelIsNotNil",
-			args:   args{},
 			apiRes: channelIsNotNil,
 			want:   want{channels: []slack.Channel{{}}, print: ""},
 		},
 		{
 			name:   "channelIsNotNil",
-			args:   args{},
 			apiRes: usersConversationsError,
 			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
 		},
@@ -98,9 +90,6 @@ var chatPostMessageOk []byte
 var chatPostMessageError []byte
 
 func TestPostStartMessage(t *testing.T) {
-	type args struct {
-		variables map[string]interface{}
-	}
 	type want struct {
 		ts    string
 		print string
@@ -108,19 +97,16 @@ func TestPostStartMessage(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		args   args
 		apiRes []byte
 		want   want
 	}{
 		{
 			name:   "PostStartMessageOk",
-			args:   args{},
 			apiRes: chatPostMessageOk,
 			want:   want{ts: "1503435956.000247", print: ""},
 		},
 		{
 			name:   "PostStartMessageError",
-			args:   args{},
 			apiRes: chatPostMessageError,
 			want:   want{ts: "", print: "too_many_attachments"},
 		},
@@ -161,7 +147,9 @@ func TestPostStartMessage(t *testing.T) {
 
 func TestPostEndMessage(t *testing.T) {
 	type args struct {
-		variables map[string]interface{}
+		start time.Time
+		ts    string
+		count int
 	}
 
 	tests := []struct {
@@ -172,13 +160,13 @@ func TestPostEndMessage(t *testing.T) {
 	}{
 		{
 			name:   "PostEndMessageOk",
-			args:   args{},
+			args:   args{start: time.Now(), ts: "1503435956.000247", count: 1},
 			apiRes: chatPostMessageOk,
 			want:   "",
 		},
 		{
 			name:   "PostEndMessageError",
-			args:   args{},
+			args:   args{start: time.Now(), ts: "1503435956.000247", count: 1},
 			apiRes: chatPostMessageError,
 			want:   "too_many_attachments",
 		},
@@ -200,7 +188,7 @@ func TestPostEndMessage(t *testing.T) {
 			}()
 			r, w, _ := os.Pipe()
 			os.Stdout = w
-			SlackClient{client}.postEndMessage(time.Now(), "1503435956.000247", 1)
+			SlackClient{client}.postEndMessage(tt.args.start, tt.args.ts, tt.args.count)
 			w.Close()
 			var buf bytes.Buffer
 			if _, err := buf.ReadFrom(r); err != nil {
@@ -225,7 +213,8 @@ var messageNotFound []byte
 
 func TestDeleteMessage(t *testing.T) {
 	type args struct {
-		variables map[string]interface{}
+		id string
+		ts string
 	}
 
 	tests := []struct {
@@ -236,19 +225,19 @@ func TestDeleteMessage(t *testing.T) {
 	}{
 		{
 			name:   "ChatDeleteOk",
-			args:   args{},
+			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
 			apiRes: chatDeleteOk,
 			want:   "",
 		},
 		{
 			name:   "ChatDeleteError",
-			args:   args{},
+			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
 			apiRes: chatDeleteError,
 			want:   "ABCDEF123:1503435956.000247:cant_delete_message",
 		},
 		{
 			name:   "MessageNotFound",
-			args:   args{},
+			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
 			apiRes: messageNotFound,
 			want:   "ABCDEF123:1503435956.000247:message_not_found",
 		},
@@ -270,7 +259,7 @@ func TestDeleteMessage(t *testing.T) {
 			}()
 			r, w, _ := os.Pipe()
 			os.Stdout = w
-			SlackClient{client}.deleteMessage("ABCDEF123", "1503435956.000247")
+			SlackClient{client}.deleteMessage(tt.args.id, tt.args.ts)
 			w.Close()
 			var buf bytes.Buffer
 			if _, err := buf.ReadFrom(r); err != nil {
@@ -304,7 +293,9 @@ var conversationsRepliesError []byte
 
 func TestLoopInAllChannels(t *testing.T) {
 	type args struct {
-		variables map[string]interface{}
+		channels []slack.Channel
+		now      time.Time
+		daysStr  string
 	}
 	type want struct {
 		count int
@@ -323,32 +314,38 @@ func TestLoopInAllChannels(t *testing.T) {
 		want   want
 	}{
 		{
+			name:   "InvalidDaysStr",
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "A"},
+			apiRes: apiRes{conversationsHistory: aMessage, conversationsReplies: conversationsRepliesMessages},
+			want:   want{count: 1, print: "strconv.Atoi: parsing \"A\": invalid syntax"},
+		},
+		{
 			name:   "AMessage",
-			args:   args{},
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
 			apiRes: apiRes{conversationsHistory: aMessage, conversationsReplies: conversationsRepliesMessages},
 			want:   want{count: 1, print: ""},
 		},
 		{
 			name:   "TwoMessage",
-			args:   args{},
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
 			apiRes: apiRes{conversationsHistory: twoMessage, conversationsReplies: conversationsRepliesMessages},
 			want:   want{count: 2, print: ""},
 		},
 		{
 			name:   "ConversationsHistoryError",
-			args:   args{},
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
 			apiRes: apiRes{conversationsHistory: conversationsHistoryError, conversationsReplies: conversationsRepliesMessages},
 			want:   want{count: 0, print: "channel_not_found"},
 		},
 		{
 			name:   "WithReplyOk",
-			args:   args{},
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
 			apiRes: apiRes{conversationsHistory: aMessageWithReply, conversationsReplies: conversationsRepliesMessages},
 			want:   want{count: 3, print: ""},
 		},
 		{
 			name:   "WithReplyError",
-			args:   args{},
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
 			apiRes: apiRes{conversationsHistory: aMessageWithReply, conversationsReplies: conversationsRepliesError},
 			want:   want{count: 1, print: "thread_not_found"},
 		},
@@ -376,7 +373,7 @@ func TestLoopInAllChannels(t *testing.T) {
 			}()
 			r, w, _ := os.Pipe()
 			os.Stdout = w
-			got := SlackClient{client}.loopInAllChannels([]slack.Channel{{}}, time.Now(), "3")
+			got := SlackClient{client}.loopInAllChannels(tt.args.channels, tt.args.now, tt.args.daysStr)
 			if got != tt.want.count {
 				t.Errorf("add() = %v, want %v", got, tt.want.count)
 			}
