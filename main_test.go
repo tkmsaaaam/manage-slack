@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"net/http"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slacktest"
@@ -15,28 +19,42 @@ var channelIsNil []byte
 //go:embed testdata/usersConversations/channelIsNotNil.json
 var channelIsNotNil []byte
 
+//go:embed testdata/usersConversations/error.json
+var usersConversationsError []byte
+
 func TestGetChannels(t *testing.T) {
 	type args struct {
 		variables map[string]interface{}
+	}
+
+	type want struct {
+		channels []slack.Channel
+		print    string
 	}
 
 	tests := []struct {
 		name   string
 		args   args
 		apiRes []byte
-		want   []slack.Channel
+		want   want
 	}{
 		{
 			name:   "channelIsNil",
 			args:   args{},
 			apiRes: channelIsNil,
-			want:   []slack.Channel{},
+			want:   want{channels: []slack.Channel{}, print: ""},
 		},
 		{
 			name:   "channelIsNotNil",
 			args:   args{},
 			apiRes: channelIsNotNil,
-			want:   []slack.Channel{{}},
+			want:   want{channels: []slack.Channel{{}}, print: ""},
+		},
+		{
+			name:   "channelIsNotNil",
+			args:   args{},
+			apiRes: usersConversationsError,
+			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
 		},
 	}
 	for _, tt := range tests {
@@ -48,33 +66,63 @@ func TestGetChannels(t *testing.T) {
 		ts.Start()
 		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
 		t.Run(tt.name, func(t *testing.T) {
-			got := SlackClient{client}.getChannels()
-			if len(got) != len(tt.want) {
-				t.Errorf("add() = %v, want %v", got, tt.want)
+			t.Helper()
+
+			orgStdout := os.Stdout
+			defer func() {
+				os.Stdout = orgStdout
+			}()
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			gotChannels := SlackClient{client}.getChannels()
+			if len(gotChannels) != len(tt.want.channels) {
+				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
+			}
+			w.Close()
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("failed to read buf: %v", err)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want.print {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}
 }
 
-//go:embed testdata/chat.postMessage.json
-var chatPostMessage []byte
+//go:embed testdata/chatPostMessage/ok.json
+var chatPostMessageOk []byte
+
+//go:embed testdata/chatPostMessage/error.json
+var chatPostMessageError []byte
 
 func TestPostStartMessage(t *testing.T) {
 	type args struct {
 		variables map[string]interface{}
+	}
+	type want struct {
+		ts    string
+		print string
 	}
 
 	tests := []struct {
 		name   string
 		args   args
 		apiRes []byte
-		want   string
+		want   want
 	}{
 		{
-			name:   "PostStartMessage",
+			name:   "PostStartMessageOk",
 			args:   args{},
-			apiRes: chatPostMessage,
-			want:   "1503435956.000247",
+			apiRes: chatPostMessageOk,
+			want:   want{ts: "1503435956.000247", print: ""},
+		},
+		{
+			name:   "PostStartMessageError",
+			args:   args{},
+			apiRes: chatPostMessageError,
+			want:   want{ts: "", print: "too_many_attachments"},
 		},
 	}
 	for _, tt := range tests {
@@ -86,9 +134,260 @@ func TestPostStartMessage(t *testing.T) {
 		ts.Start()
 		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
 		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
+
+			orgStdout := os.Stdout
+			defer func() {
+				os.Stdout = orgStdout
+			}()
+			r, w, _ := os.Pipe()
+			os.Stdout = w
 			got := SlackClient{client}.postStartMessage()
-			if got != tt.want {
-				t.Errorf("add() = %v, want %v", got, tt.want)
+			if got != tt.want.ts {
+				t.Errorf("add() = %v, want %v", got, tt.want.ts)
+			}
+			w.Close()
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("failed to read buf: %v", err)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want.print {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+			}
+		})
+	}
+}
+
+func TestPostEndMessage(t *testing.T) {
+	type args struct {
+		variables map[string]interface{}
+	}
+
+	tests := []struct {
+		name   string
+		args   args
+		apiRes []byte
+		want   string
+	}{
+		{
+			name:   "PostEndMessageOk",
+			args:   args{},
+			apiRes: chatPostMessageOk,
+			want:   "",
+		},
+		{
+			name:   "PostEndMessageError",
+			args:   args{},
+			apiRes: chatPostMessageError,
+			want:   "too_many_attachments",
+		},
+	}
+	for _, tt := range tests {
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/chat.postMessage", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
+		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
+
+			orgStdout := os.Stdout
+			defer func() {
+				os.Stdout = orgStdout
+			}()
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			SlackClient{client}.postEndMessage(time.Now(), "1503435956.000247", 1)
+			w.Close()
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("failed to read buf: %v", err)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
+			}
+		})
+	}
+}
+
+//go:embed testdata/chatDelete/ok.json
+var chatDeleteOk []byte
+
+//go:embed testdata/chatDelete/error.json
+var chatDeleteError []byte
+
+//go:embed testdata/chatDelete/messageNotFound.json
+var messageNotFound []byte
+
+func TestDeleteMessage(t *testing.T) {
+	type args struct {
+		variables map[string]interface{}
+	}
+
+	tests := []struct {
+		name   string
+		args   args
+		apiRes []byte
+		want   string
+	}{
+		{
+			name:   "ChatDeleteOk",
+			args:   args{},
+			apiRes: chatDeleteOk,
+			want:   "",
+		},
+		{
+			name:   "ChatDeleteError",
+			args:   args{},
+			apiRes: chatDeleteError,
+			want:   "ABCDEF123:1503435956.000247:cant_delete_message",
+		},
+		{
+			name:   "MessageNotFound",
+			args:   args{},
+			apiRes: messageNotFound,
+			want:   "ABCDEF123:1503435956.000247:message_not_found",
+		},
+	}
+	for _, tt := range tests {
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/chat.delete", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
+		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
+
+			orgStdout := os.Stdout
+			defer func() {
+				os.Stdout = orgStdout
+			}()
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			SlackClient{client}.deleteMessage("ABCDEF123", "1503435956.000247")
+			w.Close()
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("failed to read buf: %v", err)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
+			}
+		})
+	}
+}
+
+//go:embed testdata/conversationsHistory/aMessage.json
+var aMessage []byte
+
+//go:embed testdata/conversationsHistory/aMessageWithReply.json
+var aMessageWithReply []byte
+
+//go:embed testdata/conversationsHistory/twoMessage.json
+var twoMessage []byte
+
+//go:embed testdata/conversationsHistory/error.json
+var conversationsHistoryError []byte
+
+//go:embed testdata/conversationsReplies/messages.json
+var conversationsRepliesMessages []byte
+
+//go:embed testdata/conversationsReplies/error.json
+var conversationsRepliesError []byte
+
+func TestLoopInAllChannels(t *testing.T) {
+	type args struct {
+		variables map[string]interface{}
+	}
+	type want struct {
+		count int
+		print string
+	}
+
+	type apiRes struct {
+		conversationsHistory []byte
+		conversationsReplies []byte
+	}
+
+	tests := []struct {
+		name   string
+		args   args
+		apiRes apiRes
+		want   want
+	}{
+		{
+			name:   "AMessage",
+			args:   args{},
+			apiRes: apiRes{conversationsHistory: aMessage, conversationsReplies: conversationsRepliesMessages},
+			want:   want{count: 1, print: ""},
+		},
+		{
+			name:   "TwoMessage",
+			args:   args{},
+			apiRes: apiRes{conversationsHistory: twoMessage, conversationsReplies: conversationsRepliesMessages},
+			want:   want{count: 2, print: ""},
+		},
+		{
+			name:   "ConversationsHistoryError",
+			args:   args{},
+			apiRes: apiRes{conversationsHistory: conversationsHistoryError, conversationsReplies: conversationsRepliesMessages},
+			want:   want{count: 0, print: "channel_not_found"},
+		},
+		{
+			name:   "WithReplyOk",
+			args:   args{},
+			apiRes: apiRes{conversationsHistory: aMessageWithReply, conversationsReplies: conversationsRepliesMessages},
+			want:   want{count: 3, print: ""},
+		},
+		{
+			name:   "WithReplyError",
+			args:   args{},
+			apiRes: apiRes{conversationsHistory: aMessageWithReply, conversationsReplies: conversationsRepliesError},
+			want:   want{count: 1, print: "thread_not_found"},
+		},
+	}
+	for _, tt := range tests {
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/conversations.history", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes.conversationsHistory)
+			})
+			c.Handle("/conversations.replies", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes.conversationsReplies)
+			})
+			c.Handle("/chat.delete", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(chatDeleteOk)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
+		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
+
+			orgStdout := os.Stdout
+			defer func() {
+				os.Stdout = orgStdout
+			}()
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			got := SlackClient{client}.loopInAllChannels([]slack.Channel{{}}, time.Now(), "3")
+			if got != tt.want.count {
+				t.Errorf("add() = %v, want %v", got, tt.want.count)
+			}
+			w.Close()
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("failed to read buf: %v", err)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want.print {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}

@@ -3,3 +3,5 @@
 daily
 main
 manage-slack
+**.html
+**.out
