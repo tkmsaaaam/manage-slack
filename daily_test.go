@@ -3,9 +3,193 @@
 package main
 
 import (
-	"github.com/slack-go/slack"
+	"bytes"
+	_ "embed"
+	"net/http"
+	"os"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slacktest"
 )
+
+//go:embed testdata/usersConversations/channelIsNil.json
+var channelIsNil []byte
+
+//go:embed testdata/usersConversations/channelIsNotNil.json
+var channelIsNotNil []byte
+
+//go:embed testdata/usersConversations/error.json
+var usersConversationsError []byte
+
+func TestGetConversationsForUser(t *testing.T) {
+	type want struct {
+		channels []slack.Channel
+		print    string
+	}
+	tests := []struct {
+		name   string
+		apiRes []byte
+		want   want
+	}{
+		{
+			name:   "channelIsNil",
+			apiRes: channelIsNil,
+			want:   want{channels: []slack.Channel{}, print: ""},
+		},
+		{
+			name:   "channelIsNotNil",
+			apiRes: channelIsNotNil,
+			want:   want{channels: []slack.Channel{{}}, print: ""},
+		},
+		{
+			name:   "channelIsNotNil",
+			apiRes: usersConversationsError,
+			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
+		},
+	}
+	for _, tt := range tests {
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/users.conversations", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
+		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
+
+			orgStdout := os.Stdout
+			defer func() {
+				os.Stdout = orgStdout
+			}()
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			got := SlackClient{client}.getConversationsForUser()
+			if len(got) != len(tt.want.channels) {
+				t.Errorf("add() = %v, want %v", got, tt.want.channels)
+			}
+			w.Close()
+			var buf bytes.Buffer
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("failed to read buf: %v", err)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want.print {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+			}
+		})
+	}
+}
+
+//go:embed testdata/conversationsHistory/aMessage.json
+var aMessage []byte
+
+//go:embed testdata/conversationsHistory/aMessageWithReply.json
+var aMessageWithReply []byte
+
+//go:embed testdata/conversationsHistory/twoMessage.json
+var twoMessage []byte
+
+func TestCreateChannels(t *testing.T) {
+	type args struct {
+		conversations []slack.Channel
+		now           time.Time
+		yesterDay     time.Time
+	}
+	type want struct {
+		channels []Channel
+		count    int
+	}
+	now := time.Now()
+	yesterDay := now.AddDate(0, 0, -1)
+	tests := []struct {
+		name   string
+		args   args
+		apiRes []byte
+		want   want
+	}{
+		{
+			name:   "aMessage",
+			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
+			apiRes: aMessage,
+			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 1},
+		},
+		{
+			name:   "twoMessageInDefferentChannel",
+			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
+			apiRes: aMessage,
+			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}, {name: "channelNameA", id: "ABCDEF01234", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 2},
+		},
+	}
+
+	for _, tt := range tests {
+		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+			c.Handle("/conversations.history", func(w http.ResponseWriter, _ *http.Request) {
+				w.Write(tt.apiRes)
+			})
+		})
+		ts.Start()
+		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
+		t.Run(tt.name, func(t *testing.T) {
+			gotChannels, gotCount := createChannels(tt.args.conversations, tt.args.now, tt.args.yesterDay, SlackClient{client})
+			if len(gotChannels) != len(tt.want.channels) {
+				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
+			}
+			if len(gotChannels) > 0 && len(gotChannels[0].Sites) != len(tt.want.channels[0].Sites) {
+				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
+			}
+			if len(gotChannels) > 0 && len(gotChannels[0].name) != len(tt.want.channels[0].name) {
+				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
+			}
+			if gotCount != tt.want.count {
+				t.Errorf("add() = %v, want %v", gotCount, tt.want.count)
+			}
+		})
+	}
+}
+
+func TestCreateMessage(t *testing.T) {
+	type args struct {
+		yesterDay time.Time
+		channels  []Channel
+		count     int
+	}
+
+	aDay := time.Date(2023, 1, 1, 0, 0, 0, 0, time.Now().Location())
+
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "channelsIsNil",
+			args: args{yesterDay: aDay, channels: []Channel{}, count: 0},
+			want: "2023-01-01\nSunday\n0\n",
+		},
+		{
+			name: "channelsIsZero",
+			args: args{yesterDay: aDay, channels: []Channel{{name: "A", id: "ABCDEF12345", Sites: []Site{}}}, count: 0},
+			want: "2023-01-01\nSunday\n0\n",
+		},
+		{
+			name: "channelsIsPresent",
+			args: args{yesterDay: aDay, channels: []Channel{{name: "A", id: "ABCDEF12345", Sites: []Site{{name: "SiteA", count: 1}, {name: "SiteB", count: 2}}}}, count: 3},
+			want: "2023-01-01\nSunday\n3\n\n<#ABCDEF12345>\nSiteB : 2\nSiteA : 1\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := createMessage(tt.args.yesterDay, tt.args.channels, tt.args.count)
+			if got != tt.want {
+				t.Errorf("add() = \n%v, want \n%v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestAddUser(t *testing.T) {
 	type args struct {
