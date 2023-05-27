@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	_ "embed"
+	"embed"
 	"net/http"
 	"os"
 	"strings"
@@ -13,14 +13,8 @@ import (
 	"github.com/slack-go/slack/slacktest"
 )
 
-//go:embed testdata/usersConversations/channelIsNil.json
-var channelIsNil []byte
-
-//go:embed testdata/usersConversations/channelIsNotNil.json
-var channelIsNotNil []byte
-
-//go:embed testdata/usersConversations/error.json
-var usersConversationsError []byte
+//go:embed testdata
+var testdata embed.FS
 
 func TestGetChannels(t *testing.T) {
 	type want struct {
@@ -30,29 +24,30 @@ func TestGetChannels(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		apiRes []byte
+		apiRes string
 		want   want
 	}{
 		{
 			name:   "channelIsNil",
-			apiRes: channelIsNil,
+			apiRes: "testdata/usersConversations/channelIsNil.json",
 			want:   want{channels: []slack.Channel{}, print: ""},
 		},
 		{
 			name:   "channelIsNotNil",
-			apiRes: channelIsNotNil,
+			apiRes: "testdata/usersConversations/channelIsNotNil.json",
 			want:   want{channels: []slack.Channel{{}}, print: ""},
 		},
 		{
-			name:   "channelIsNotNil",
-			apiRes: usersConversationsError,
+			name:   "usersConversationsError",
+			apiRes: "testdata/usersConversations/error.json",
 			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/users.conversations", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes)
+				res, _ := testdata.ReadFile(tt.apiRes)
+				w.Write(res)
 			})
 		})
 		ts.Start()
@@ -83,12 +78,6 @@ func TestGetChannels(t *testing.T) {
 	}
 }
 
-//go:embed testdata/chatPostMessage/ok.json
-var chatPostMessageOk []byte
-
-//go:embed testdata/chatPostMessage/error.json
-var chatPostMessageError []byte
-
 func TestPostStartMessage(t *testing.T) {
 	type want struct {
 		ts    string
@@ -97,24 +86,25 @@ func TestPostStartMessage(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		apiRes []byte
+		apiRes string
 		want   want
 	}{
 		{
 			name:   "PostStartMessageOk",
-			apiRes: chatPostMessageOk,
+			apiRes: "testdata/chatPostMessage/ok.json",
 			want:   want{ts: "1503435956.000247", print: ""},
 		},
 		{
 			name:   "PostStartMessageError",
-			apiRes: chatPostMessageError,
+			apiRes: "testdata/chatPostMessage/error.json",
 			want:   want{ts: "", print: "too_many_attachments"},
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/chat.postMessage", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes)
+				res, _ := testdata.ReadFile(tt.apiRes)
+				w.Write(res)
 			})
 		})
 		ts.Start()
@@ -155,26 +145,27 @@ func TestPostEndMessage(t *testing.T) {
 	tests := []struct {
 		name   string
 		args   args
-		apiRes []byte
+		apiRes string
 		want   string
 	}{
 		{
 			name:   "PostEndMessageOk",
 			args:   args{start: time.Now(), ts: "1503435956.000247", count: 1},
-			apiRes: chatPostMessageOk,
+			apiRes: "testdata/chatPostMessage/ok.json",
 			want:   "",
 		},
 		{
 			name:   "PostEndMessageError",
 			args:   args{start: time.Now(), ts: "1503435956.000247", count: 1},
-			apiRes: chatPostMessageError,
+			apiRes: "testdata/chatPostMessage/error.json",
 			want:   "too_many_attachments",
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/chat.postMessage", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes)
+				res, _ := testdata.ReadFile(tt.apiRes)
+				w.Write(res)
 			})
 		})
 		ts.Start()
@@ -202,15 +193,6 @@ func TestPostEndMessage(t *testing.T) {
 	}
 }
 
-//go:embed testdata/chatDelete/ok.json
-var chatDeleteOk []byte
-
-//go:embed testdata/chatDelete/error.json
-var chatDeleteError []byte
-
-//go:embed testdata/chatDelete/messageNotFound.json
-var messageNotFound []byte
-
 func TestDeleteMessage(t *testing.T) {
 	type args struct {
 		id string
@@ -220,32 +202,33 @@ func TestDeleteMessage(t *testing.T) {
 	tests := []struct {
 		name   string
 		args   args
-		apiRes []byte
+		apiRes string
 		want   string
 	}{
 		{
 			name:   "ChatDeleteOk",
 			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
-			apiRes: chatDeleteOk,
+			apiRes: "testdata/chatDelete/ok.json",
 			want:   "",
 		},
 		{
 			name:   "ChatDeleteError",
 			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
-			apiRes: chatDeleteError,
+			apiRes: "testdata/chatDelete/error.json",
 			want:   "ABCDEF123:1503435956.000247:cant_delete_message",
 		},
 		{
 			name:   "MessageNotFound",
 			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
-			apiRes: messageNotFound,
+			apiRes: "testdata/chatDelete/messageNotFound.json",
 			want:   "ABCDEF123:1503435956.000247:message_not_found",
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/chat.delete", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes)
+				res, _ := testdata.ReadFile(tt.apiRes)
+				w.Write(res)
 			})
 		})
 		ts.Start()
@@ -273,24 +256,6 @@ func TestDeleteMessage(t *testing.T) {
 	}
 }
 
-//go:embed testdata/conversationsHistory/aMessage.json
-var aMessage []byte
-
-//go:embed testdata/conversationsHistory/aMessageWithReply.json
-var aMessageWithReply []byte
-
-//go:embed testdata/conversationsHistory/twoMessage.json
-var twoMessage []byte
-
-//go:embed testdata/conversationsHistory/error.json
-var conversationsHistoryError []byte
-
-//go:embed testdata/conversationsReplies/messages.json
-var conversationsRepliesMessages []byte
-
-//go:embed testdata/conversationsReplies/error.json
-var conversationsRepliesError []byte
-
 func TestLoopInAllChannels(t *testing.T) {
 	type args struct {
 		channels []slack.Channel
@@ -303,8 +268,8 @@ func TestLoopInAllChannels(t *testing.T) {
 	}
 
 	type apiRes struct {
-		conversationsHistory []byte
-		conversationsReplies []byte
+		conversationsHistory string
+		conversationsReplies string
 	}
 
 	tests := []struct {
@@ -316,50 +281,53 @@ func TestLoopInAllChannels(t *testing.T) {
 		{
 			name:   "InvalidDaysStr",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "A"},
-			apiRes: apiRes{conversationsHistory: aMessage, conversationsReplies: conversationsRepliesMessages},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessage.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
 			want:   want{count: 1, print: "strconv.Atoi: parsing \"A\": invalid syntax"},
 		},
 		{
 			name:   "AMessage",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
-			apiRes: apiRes{conversationsHistory: aMessage, conversationsReplies: conversationsRepliesMessages},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessage.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
 			want:   want{count: 1, print: ""},
 		},
 		{
 			name:   "TwoMessage",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
-			apiRes: apiRes{conversationsHistory: twoMessage, conversationsReplies: conversationsRepliesMessages},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/twoMessage.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
 			want:   want{count: 2, print: ""},
 		},
 		{
 			name:   "ConversationsHistoryError",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
-			apiRes: apiRes{conversationsHistory: conversationsHistoryError, conversationsReplies: conversationsRepliesMessages},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/error.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
 			want:   want{count: 0, print: "channel_not_found"},
 		},
 		{
 			name:   "WithReplyOk",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
-			apiRes: apiRes{conversationsHistory: aMessageWithReply, conversationsReplies: conversationsRepliesMessages},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessageWithReply.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
 			want:   want{count: 3, print: ""},
 		},
 		{
 			name:   "WithReplyError",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), daysStr: "3"},
-			apiRes: apiRes{conversationsHistory: aMessageWithReply, conversationsReplies: conversationsRepliesError},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessageWithReply.json", conversationsReplies: "testdata/conversationsReplies/error.json"},
 			want:   want{count: 1, print: "thread_not_found"},
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/conversations.history", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes.conversationsHistory)
+				res, _ := testdata.ReadFile(tt.apiRes.conversationsHistory)
+				w.Write(res)
 			})
 			c.Handle("/conversations.replies", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes.conversationsReplies)
+				res, _ := testdata.ReadFile(tt.apiRes.conversationsReplies)
+				w.Write(res)
 			})
 			c.Handle("/chat.delete", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(chatDeleteOk)
+				res, _ := testdata.ReadFile("testdata/chatDelete/ok.json")
+				w.Write(res)
 			})
 		})
 		ts.Start()

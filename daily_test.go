@@ -4,7 +4,7 @@ package main
 
 import (
 	"bytes"
-	_ "embed"
+	"embed"
 	"net/http"
 	"os"
 	"strings"
@@ -15,14 +15,8 @@ import (
 	"github.com/slack-go/slack/slacktest"
 )
 
-//go:embed testdata/usersConversations/channelIsNil.json
-var channelIsNil []byte
-
-//go:embed testdata/usersConversations/channelIsNotNil.json
-var channelIsNotNil []byte
-
-//go:embed testdata/usersConversations/error.json
-var usersConversationsError []byte
+//go:embed testdata
+var testdata embed.FS
 
 func TestGetConversationsForUser(t *testing.T) {
 	type want struct {
@@ -31,29 +25,30 @@ func TestGetConversationsForUser(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		apiRes []byte
+		apiRes string
 		want   want
 	}{
 		{
 			name:   "channelIsNil",
-			apiRes: channelIsNil,
+			apiRes: "testdata/usersConversations/channelIsNil.json",
 			want:   want{channels: []slack.Channel{}, print: ""},
 		},
 		{
 			name:   "channelIsNotNil",
-			apiRes: channelIsNotNil,
+			apiRes: "testdata/usersConversations/channelIsNotNil.json",
 			want:   want{channels: []slack.Channel{{}}, print: ""},
 		},
 		{
-			name:   "channelIsNotNil",
-			apiRes: usersConversationsError,
+			name:   "usersConversationsError",
+			apiRes: "testdata/usersConversations/error.json",
 			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
 		},
 	}
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/users.conversations", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes)
+				res, _ := testdata.ReadFile(tt.apiRes)
+				w.Write(res)
 			})
 		})
 		ts.Start()
@@ -84,15 +79,6 @@ func TestGetConversationsForUser(t *testing.T) {
 	}
 }
 
-//go:embed testdata/conversationsHistory/aMessage.json
-var aMessage []byte
-
-//go:embed testdata/conversationsHistory/aMessageWithReply.json
-var aMessageWithReply []byte
-
-//go:embed testdata/conversationsHistory/twoMessage.json
-var twoMessage []byte
-
 func TestCreateChannels(t *testing.T) {
 	type args struct {
 		conversations []slack.Channel
@@ -108,19 +94,19 @@ func TestCreateChannels(t *testing.T) {
 	tests := []struct {
 		name   string
 		args   args
-		apiRes []byte
+		apiRes string
 		want   want
 	}{
 		{
 			name:   "aMessage",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
-			apiRes: aMessage,
+			apiRes: "testdata/conversationsHistory/aMessage.json",
 			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 1},
 		},
 		{
 			name:   "twoMessageInDefferentChannel",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
-			apiRes: aMessage,
+			apiRes: "testdata/conversationsHistory/aMessage.json",
 			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}, {name: "channelNameA", id: "ABCDEF01234", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 2},
 		},
 	}
@@ -128,7 +114,8 @@ func TestCreateChannels(t *testing.T) {
 	for _, tt := range tests {
 		ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 			c.Handle("/conversations.history", func(w http.ResponseWriter, _ *http.Request) {
-				w.Write(tt.apiRes)
+				res, _ := testdata.ReadFile(tt.apiRes)
+				w.Write(res)
 			})
 		})
 		ts.Start()
