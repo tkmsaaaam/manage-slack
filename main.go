@@ -29,10 +29,10 @@ func (client SlackClient) postStartMessage() string {
 	return ts
 }
 
-func (client SlackClient) postEndMessage(start time.Time, ts string, count int) {
+func (client SlackClient) postEndMessage(start time.Time, ts string, messageCount int, fileCount int) {
 	duration := time.Now().Sub(start)
-	avg := float64(count) / duration.Seconds()
-	message := "タスク実行を終了します\n" + duration.String() + "\n" + "count:" + strconv.FormatInt(int64(count), 10) + "\n" + "avg:" + strconv.FormatFloat(avg, 'f', -1, 64) + "/s"
+	avg := float64(messageCount) / duration.Seconds()
+	message := "タスク実行を終了します\n" + duration.String() + "\n" + "message count: " + strconv.FormatInt(int64(messageCount), 10) + "\n" + "avg: " + strconv.FormatFloat(avg, 'f', -1, 64) + "/s" + "\n" + "file count: " + strconv.FormatInt(int64(fileCount), 10)
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
 		fmt.Println(err)
@@ -49,12 +49,18 @@ func (client SlackClient) deleteMessage(id string, ts string) {
 	}
 }
 
-func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.Time, daysStr string) int {
-	count := 0
+func makeDays(daysStr string) int {
 	days, err := strconv.Atoi(daysStr)
 	if err != nil {
 		fmt.Println(err)
+		const DAFAULT_DAYS = 3
+		return DAFAULT_DAYS
 	}
+	return days
+}
+
+func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.Time, days int) int {
+	count := 0
 	for _, channel := range channels {
 		id := channel.ID
 		latest := strconv.FormatInt(now.AddDate(0, 0, -days).Unix(), 10)
@@ -82,12 +88,36 @@ func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.T
 	return count
 }
 
+func (client SlackClient) deleteFiles(now time.Time, days int) int {
+	latest := now.AddDate(0, 0, -days).Unix()
+	params := slack.GetFilesParameters{TimestampTo: slack.JSONTime(latest)}
+	res, _, err := client.GetFiles(params)
+	count := 0
+	if err != nil {
+		fmt.Println(err)
+		return count
+	}
+	for _, file := range res {
+		id := file.ID
+		err := client.DeleteFile(id)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		count++
+	}
+	return count
+}
+
 func main() {
 	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 	userClient := slack.New(os.Getenv("SLACK_USER_TOKEN"))
 	start := time.Now()
 	ts := SlackClient{botClient}.postStartMessage()
 	channels := SlackClient{userClient}.getChannels()
-	count := SlackClient{userClient}.loopInAllChannels(channels, start, os.Getenv("DAYS"))
-	SlackClient{botClient}.postEndMessage(start, ts, count)
+	daysStr := os.Getenv("DAYS")
+	days := makeDays(daysStr)
+	messageCount := SlackClient{userClient}.loopInAllChannels(channels, start, days)
+	fileCount := SlackClient{botClient}.deleteFiles(start, days)
+	SlackClient{botClient}.postEndMessage(start, ts, messageCount, fileCount)
 }
