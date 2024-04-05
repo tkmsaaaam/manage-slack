@@ -30,7 +30,7 @@ func (client SlackClient) postStartMessage() string {
 }
 
 func (client SlackClient) postEndMessage(start time.Time, ts string, messageCount int, fileCount int) {
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 	avg := float64(messageCount) / duration.Seconds()
 	message := "タスク実行を終了します\n" + duration.String() + "\n" + "message count: " + strconv.FormatInt(int64(messageCount), 10) + "\n" + "avg: " + strconv.FormatFloat(avg, 'f', -1, 64) + "/s" + "\n" + "file count: " + strconv.FormatInt(int64(fileCount), 10)
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
@@ -70,6 +70,9 @@ func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.T
 			fmt.Println(err)
 		}
 		for _, message := range res.Messages {
+			if len(message.Reactions) > 0 {
+				continue
+			}
 			count++
 			if message.ReplyCount != 0 {
 				repliesParams := slack.GetConversationRepliesParameters{ChannelID: id, Timestamp: message.Msg.Timestamp}
