@@ -65,7 +65,9 @@ func TestGetChannels(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			gotChannels := SlackClient{client}.getChannels()
+
 			if len(gotChannels) != len(tt.want.channels) {
 				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
 			}
@@ -120,7 +122,9 @@ func TestPostStartMessage(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			got := SlackClient{client}.postStartMessage()
+
 			if got != tt.want.ts {
 				t.Errorf("add() = %v, want %v", got, tt.want.ts)
 			}
@@ -180,7 +184,9 @@ func TestPostEndMessage(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			SlackClient{client}.postEndMessage(tt.args.start, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
+
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
 				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
@@ -241,7 +247,9 @@ func TestDeleteMessage(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			SlackClient{client}.deleteMessage(tt.args.id, tt.args.ts)
+
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
 				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
@@ -285,7 +293,9 @@ func TestMakeDays(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			got := makeDays(tt.arg)
+
 			if got != tt.want.res {
 				t.Errorf("add() = %v, want %v", got, tt.want.res)
 			}
@@ -379,7 +389,9 @@ func TestLoopInAllChannels(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			got := SlackClient{client}.loopInAllChannels(tt.args.channels, tt.args.now, tt.args.days)
+
 			if got != tt.want.count {
 				t.Errorf("add() = %v, want %v", got, tt.want.count)
 			}
@@ -462,7 +474,9 @@ func TestDeleteFiles(t *testing.T) {
 				log.SetFlags(defaultFlags)
 				buf.Reset()
 			}()
+
 			got := SlackClient{client}.deleteFiles(tt.args.now, tt.args.days)
+
 			if got != tt.want.count {
 				t.Errorf("add() = %v, want %v", got, tt.want.count)
 			}
