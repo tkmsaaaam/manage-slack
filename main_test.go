@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -40,7 +41,7 @@ func TestGetChannels(t *testing.T) {
 		{
 			name:   "usersConversationsError",
 			apiRes: "testdata/usersConversations/error.json",
-			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
+			want:   want{channels: []slack.Channel{}, print: "Can not get channels: invalid_auth"},
 		},
 	}
 	for _, tt := range tests {
@@ -55,20 +56,18 @@ func TestGetChannels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
 			defer func() {
-				os.Stdout = orgStdout
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
 			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
 			gotChannels := SlackClient{client}.getChannels()
 			if len(gotChannels) != len(tt.want.channels) {
 				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
@@ -97,7 +96,7 @@ func TestPostStartMessage(t *testing.T) {
 		{
 			name:   "PostStartMessageError",
 			apiRes: "testdata/chatPostMessage/error.json",
-			want:   want{ts: "", print: "too_many_attachments"},
+			want:   want{ts: "", print: "Can not post start message: too_many_attachments"},
 		},
 	}
 	for _, tt := range tests {
@@ -112,20 +111,18 @@ func TestPostStartMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
 			defer func() {
-				os.Stdout = orgStdout
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
 			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
 			got := SlackClient{client}.postStartMessage()
 			if got != tt.want.ts {
 				t.Errorf("add() = %v, want %v", got, tt.want.ts)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
@@ -159,7 +156,7 @@ func TestPostEndMessage(t *testing.T) {
 			name:   "PostEndMessageError",
 			args:   args{start: time.Now(), ts: "1503435956.000247", messageCount: 1, fileCount: 0},
 			apiRes: "testdata/chatPostMessage/error.json",
-			want:   "too_many_attachments",
+			want:   "End message can not post: too_many_attachments",
 		},
 	}
 	for _, tt := range tests {
@@ -174,18 +171,16 @@ func TestPostEndMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
-			defer func() {
-				os.Stdout = orgStdout
-			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-			SlackClient{client}.postEndMessage(tt.args.start, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
-			w.Close()
 			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
-			}
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
+			defer func() {
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
+			}()
+			SlackClient{client}.postEndMessage(tt.args.start, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
 				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
@@ -216,13 +211,13 @@ func TestDeleteMessage(t *testing.T) {
 			name:   "ChatDeleteError",
 			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
 			apiRes: "testdata/chatDelete/error.json",
-			want:   "ABCDEF123:1503435956.000247:cant_delete_message",
+			want:   "Can not delete message: ABCDEF123 : 1503435956.000247 : cant_delete_message",
 		},
 		{
 			name:   "MessageNotFound",
 			args:   args{id: "ABCDEF123", ts: "1503435956.000247"},
 			apiRes: "testdata/chatDelete/messageNotFound.json",
-			want:   "ABCDEF123:1503435956.000247:message_not_found",
+			want:   "Can not delete message: ABCDEF123 : 1503435956.000247 : message_not_found",
 		},
 	}
 	for _, tt := range tests {
@@ -237,18 +232,16 @@ func TestDeleteMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
-			defer func() {
-				os.Stdout = orgStdout
-			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-			SlackClient{client}.deleteMessage(tt.args.id, tt.args.ts)
-			w.Close()
 			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
-			}
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
+			defer func() {
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
+			}()
+			SlackClient{client}.deleteMessage(tt.args.id, tt.args.ts)
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
 				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
@@ -270,7 +263,7 @@ func TestMakeDays(t *testing.T) {
 		{
 			name: "CanNotDoAtoi",
 			arg:  "a",
-			want: want{res: 3, print: "strconv.Atoi: parsing \"a\": invalid syntax"},
+			want: want{res: 3, print: "env DAYS is invalid: strconv.Atoi: parsing \"a\": invalid syntax"},
 		},
 		{
 			name: "CanDoAtoi",
@@ -283,20 +276,18 @@ func TestMakeDays(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
 			defer func() {
-				os.Stdout = orgStdout
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
 			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
 			got := makeDays(tt.arg)
 			if got != tt.want.res {
 				t.Errorf("add() = %v, want %v", got, tt.want.res)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
@@ -344,7 +335,7 @@ func TestLoopInAllChannels(t *testing.T) {
 			name:   "ConversationsHistoryError",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/error.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
-			want:   want{count: 0, print: "channel_not_found"},
+			want:   want{count: 0, print: "Can not get history: channel_not_found"},
 		},
 		{
 			name:   "WithReplyOk",
@@ -356,7 +347,7 @@ func TestLoopInAllChannels(t *testing.T) {
 			name:   "WithReplyError",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessageWithReply.json", conversationsReplies: "testdata/conversationsReplies/error.json"},
-			want:   want{count: 1, print: "thread_not_found"},
+			want:   want{count: 1, print: "Can not get replies: thread_not_found"},
 		},
 	}
 	for _, tt := range tests {
@@ -379,20 +370,18 @@ func TestLoopInAllChannels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
 			defer func() {
-				os.Stdout = orgStdout
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
 			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
 			got := SlackClient{client}.loopInAllChannels(tt.args.channels, tt.args.now, tt.args.days)
 			if got != tt.want.count {
 				t.Errorf("add() = %v, want %v", got, tt.want.count)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
@@ -427,7 +416,7 @@ func TestDeleteFiles(t *testing.T) {
 			name:   "GetFileIsNotOk",
 			args:   args{now: time.Now(), days: 3},
 			apiRes: apiRes{files: "testdata/files/error.json", deleteFile: "testdata/deleteFile/ok.json"},
-			want:   want{count: 0, print: "invalid_auth"},
+			want:   want{count: 0, print: "Can not get file: invalid_auth"},
 		},
 		{
 			name:   "CanDeleteOneFile",
@@ -445,7 +434,7 @@ func TestDeleteFiles(t *testing.T) {
 			name:   "CanNotDeleteTwoFiles",
 			args:   args{now: time.Now(), days: 3},
 			apiRes: apiRes{files: "testdata/files/twoFiles.json", deleteFile: "testdata/deleteFile/error.json"},
-			want:   want{count: 0, print: "invalid_auth\ninvalid_auth"},
+			want:   want{count: 0, print: "Can not delete file: invalid_auth\nCan not delete file: invalid_auth"},
 		},
 	}
 	for _, tt := range tests {
@@ -464,20 +453,18 @@ func TestDeleteFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
 			defer func() {
-				os.Stdout = orgStdout
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
 			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
 			got := SlackClient{client}.deleteFiles(tt.args.now, tt.args.days)
 			if got != tt.want.count {
 				t.Errorf("add() = %v, want %v", got, tt.want.count)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {

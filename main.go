@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -16,7 +16,7 @@ type SlackClient struct {
 func (client SlackClient) getChannels() []slack.Channel {
 	channels, _, err := client.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Can not get channels: %v\n", err)
 	}
 	return channels
 }
@@ -24,7 +24,7 @@ func (client SlackClient) getChannels() []slack.Channel {
 func (client SlackClient) postStartMessage() string {
 	_, ts, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText("タスク実行を開始します", true))
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Can not post start message: %v\n", err)
 	}
 	return ts
 }
@@ -35,14 +35,14 @@ func (client SlackClient) postEndMessage(start time.Time, ts string, messageCoun
 	message := "タスク実行を終了します\n" + duration.String() + "\n" + "message count: " + strconv.FormatInt(int64(messageCount), 10) + "\n" + "avg: " + strconv.FormatFloat(avg, 'f', -1, 64) + "/s" + "\n" + "file count: " + strconv.FormatInt(int64(fileCount), 10)
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("End message can not post: %v\n", err)
 	}
 }
 
 func (client SlackClient) deleteMessage(id string, ts string) {
 	_, _, err := client.DeleteMessage(id, ts)
 	if err != nil {
-		fmt.Println(id + ":" + ts + ":" + err.Error())
+		log.Printf("Can not delete message: %s : %s : %v\n", id, ts, err)
 		if err.Error() != "message_not_found" {
 			recover()
 		}
@@ -52,7 +52,7 @@ func (client SlackClient) deleteMessage(id string, ts string) {
 func makeDays(daysStr string) int {
 	days, err := strconv.Atoi(daysStr)
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("env DAYS is invalid: %v\n", err)
 		const DAFAULT_DAYS = 3
 		return DAFAULT_DAYS
 	}
@@ -67,7 +67,7 @@ func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.T
 		params := slack.GetConversationHistoryParameters{ChannelID: id, Limit: 1000, Latest: latest}
 		res, err := client.GetConversationHistory(&params)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("Can not get history: %v\n", err)
 		}
 		for _, message := range res.Messages {
 			if len(message.Reactions) > 0 {
@@ -78,7 +78,7 @@ func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.T
 				repliesParams := slack.GetConversationRepliesParameters{ChannelID: id, Timestamp: message.Msg.Timestamp}
 				replies, _, _, err := client.GetConversationReplies(&repliesParams)
 				if err != nil {
-					fmt.Println(err)
+					log.Printf("Can not get replies: %v\n", err)
 				}
 				for _, reply := range replies {
 					count++
@@ -97,14 +97,14 @@ func (client SlackClient) deleteFiles(now time.Time, days int) int {
 	res, _, err := client.GetFiles(params)
 	count := 0
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Can not get file: %v\n", err)
 		return count
 	}
 	for _, file := range res {
 		id := file.ID
 		err := client.DeleteFile(id)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("Can not delete file: %v\n", err)
 			continue
 		}
 		count++
