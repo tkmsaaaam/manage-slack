@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +21,7 @@ var testdata embed.FS
 func TestGetChannels(t *testing.T) {
 	type want struct {
 		channels []slack.Channel
-		print    string
+		err      error
 	}
 
 	tests := []struct {
@@ -31,17 +32,17 @@ func TestGetChannels(t *testing.T) {
 		{
 			name:   "channelIsNil",
 			apiRes: "testdata/usersConversations/channelIsNil.json",
-			want:   want{channels: []slack.Channel{}, print: ""},
+			want:   want{channels: []slack.Channel{}, err: nil},
 		},
 		{
 			name:   "channelIsNotNil",
 			apiRes: "testdata/usersConversations/channelIsNotNil.json",
-			want:   want{channels: []slack.Channel{{}}, print: ""},
+			want:   want{channels: []slack.Channel{{}}, err: nil},
 		},
 		{
 			name:   "usersConversationsError",
 			apiRes: "testdata/usersConversations/error.json",
-			want:   want{channels: []slack.Channel{}, print: "Can not get channels: invalid_auth"},
+			want:   want{channels: []slack.Channel{}, err: fmt.Errorf("can not get channels: invalid_auth")},
 		},
 	}
 	for _, tt := range tests {
@@ -56,24 +57,15 @@ func TestGetChannels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			var buf bytes.Buffer
-			log.SetOutput(&buf)
-			defaultFlags := log.Flags()
-			log.SetFlags(0)
-			defer func() {
-				log.SetOutput(os.Stderr)
-				log.SetFlags(defaultFlags)
-				buf.Reset()
-			}()
-
-			gotChannels := SlackClient{client}.getChannels()
+			gotChannels, err := SlackClient{client}.getChannels()
 
 			if len(gotChannels) != len(tt.want.channels) {
 				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
 			}
-			gotPrint := strings.TrimRight(buf.String(), "\n")
-			if gotPrint != tt.want.print {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+			if err != nil || tt.want.err != nil {
+				if err.Error() != tt.want.err.Error() {
+					t.Errorf("add() = %v, want %v", err, tt.want.err)
+				}
 			}
 		})
 	}

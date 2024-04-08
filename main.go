@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -13,12 +14,12 @@ type SlackClient struct {
 	*slack.Client
 }
 
-func (client SlackClient) getChannels() []slack.Channel {
+func (client SlackClient) getChannels() ([]slack.Channel, error) {
 	channels, _, err := client.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
-		log.Printf("Can not get channels: %v\n", err)
+		return nil, fmt.Errorf("can not get channels: %w", err)
 	}
-	return channels
+	return channels, nil
 }
 
 func (client SlackClient) postStartMessage() string {
@@ -68,6 +69,7 @@ func (client SlackClient) loopInAllChannels(channels []slack.Channel, now time.T
 		res, err := client.GetConversationHistory(&params)
 		if err != nil {
 			log.Printf("Can not get history: %v\n", err)
+			continue
 		}
 		for _, message := range res.Messages {
 			if len(message.Reactions) > 0 {
@@ -117,7 +119,11 @@ func main() {
 	userClient := slack.New(os.Getenv("SLACK_USER_TOKEN"))
 	start := time.Now()
 	ts := SlackClient{botClient}.postStartMessage()
-	channels := SlackClient{userClient}.getChannels()
+	channels, err := SlackClient{userClient}.getChannels()
+	if err != nil {
+		log.Printf("%v", err)
+		return
+	}
 	daysStr := os.Getenv("DAYS")
 	days := makeDays(daysStr)
 	messageCount := SlackClient{userClient}.loopInAllChannels(channels, start, days)
