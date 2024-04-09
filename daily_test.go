@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -41,7 +42,7 @@ func TestGetConversationsForUser(t *testing.T) {
 		{
 			name:   "usersConversationsError",
 			apiRes: "testdata/usersConversations/error.json",
-			want:   want{channels: []slack.Channel{}, print: "invalid_auth"},
+			want:   want{channels: []slack.Channel{}, print: "can not get channels: invalid_auth"},
 		},
 	}
 	for _, tt := range tests {
@@ -56,20 +57,20 @@ func TestGetConversationsForUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			orgStdout := os.Stdout
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
 			defer func() {
-				os.Stdout = orgStdout
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
 			}()
-			r, w, _ := os.Pipe()
-			os.Stdout = w
+
 			got := SlackClient{client}.getConversationsForUser()
+
 			if len(got) != len(tt.want.channels) {
 				t.Errorf("add() = %v, want %v", got, tt.want.channels)
-			}
-			w.Close()
-			var buf bytes.Buffer
-			if _, err := buf.ReadFrom(r); err != nil {
-				t.Fatalf("failed to read buf: %v", err)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {

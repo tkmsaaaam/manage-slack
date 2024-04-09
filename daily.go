@@ -3,7 +3,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strconv"
@@ -38,13 +38,16 @@ func main() {
 
 	message := createMessage(yesterDay, channels, count)
 	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
-	botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, false))
+	_, _, err := botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, false))
+	if err != nil {
+		log.Printf("can not post: %v\n", err)
+	}
 }
 
 func (client SlackClient) getConversationsForUser() []slack.Channel {
 	conversations, _, err := client.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("can not get channels: %v\n", err)
 	}
 	return conversations
 }
@@ -56,7 +59,11 @@ func createChannels(conversations []slack.Channel, now time.Time, yesterDay time
 	var count int
 	for _, conversation := range conversations {
 		params := slack.GetConversationHistoryParameters{ChannelID: conversation.ID, Limit: 1000, Latest: latest, Oldest: oldest}
-		conversationHistory, _ := userClient.GetConversationHistory(&params)
+		conversationHistory, err := userClient.GetConversationHistory(&params)
+		if err != nil {
+			log.Printf("can not get history channelID: %s, %v\n", conversation.ID, err)
+			continue
+		}
 		channel := Channel{name: conversation.Name, id: conversation.ID}
 		for _, message := range conversationHistory.Messages {
 			count++
