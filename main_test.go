@@ -330,8 +330,14 @@ func TestLoopInAllChannels(t *testing.T) {
 		{
 			name:   "TwoMessage",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
-			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/twoMessage.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/twoMessages.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
 			want:   want{count: 2, print: ""},
+		},
+		{
+			name:   "WithReaction",
+			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
+			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/twoMessagesWithReaction.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
+			want:   want{count: 1, print: ""},
 		},
 		{
 			name:   "ConversationsHistoryError",

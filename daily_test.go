@@ -110,6 +110,12 @@ func TestCreateChannels(t *testing.T) {
 			apiRes: "testdata/conversationsHistory/aMessage.json",
 			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}, {name: "channelNameA", id: "ABCDEF01234", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 2},
 		},
+		{
+			name:   "twoMessageInDefferentChannel",
+			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
+			apiRes: "testdata/conversationsHistory/error.json",
+			want:   want{channels: []Channel{}, count: 0},
+		},
 	}
 
 	for _, tt := range tests {
