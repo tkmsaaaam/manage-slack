@@ -89,6 +89,7 @@ func TestCreateChannels(t *testing.T) {
 	type want struct {
 		channels []Channel
 		count    int
+		err      string
 	}
 	now := time.Now()
 	yesterDay := now.AddDate(0, 0, -1)
@@ -102,19 +103,19 @@ func TestCreateChannels(t *testing.T) {
 			name:   "aMessage",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/aMessage.json",
-			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 1},
+			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 1, err: ""},
 		},
 		{
 			name:   "twoMessageInDefferentChannel",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/aMessage.json",
-			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}, {name: "channelNameA", id: "ABCDEF01234", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 2},
+			want:   want{channels: []Channel{{name: "channelName", id: "ABCDEF12345", Sites: []Site{{name: "ABCDEF123", count: 1}}}, {name: "channelNameA", id: "ABCDEF01234", Sites: []Site{{name: "ABCDEF123", count: 1}}}}, count: 2, err: ""},
 		},
 		{
-			name:   "twoMessageInDefferentChannel",
+			name:   "twoMessageInDefferentChannelWithError",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/error.json",
-			want:   want{channels: []Channel{}, count: 0},
+			want:   want{channels: []Channel{}, count: 0, err: "can not get history channelID: ABCDEF01234, channel_not_found\ncan not get history channelID: ABCDEF12345, channel_not_found"},
 		},
 	}
 
@@ -128,6 +129,17 @@ func TestCreateChannels(t *testing.T) {
 		ts.Start()
 		client := slack.New("testToken", slack.OptionAPIURL(ts.GetAPIURL()))
 		t.Run(tt.name, func(t *testing.T) {
+
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defaultFlags := log.Flags()
+			log.SetFlags(0)
+			defer func() {
+				log.SetOutput(os.Stderr)
+				log.SetFlags(defaultFlags)
+				buf.Reset()
+			}()
+
 			gotChannels, gotCount := createChannels(tt.args.conversations, tt.args.now, tt.args.yesterDay, SlackClient{client})
 			if len(gotChannels) != len(tt.want.channels) {
 				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
@@ -140,6 +152,10 @@ func TestCreateChannels(t *testing.T) {
 			}
 			if gotCount != tt.want.count {
 				t.Errorf("add() = %v, want %v", gotCount, tt.want.count)
+			}
+			gotPrint := strings.TrimRight(buf.String(), "\n")
+			if gotPrint != tt.want.err {
+				t.Errorf("add() = %v, want %v", gotPrint, tt.want.err)
 			}
 		})
 	}
