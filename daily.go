@@ -4,9 +4,11 @@ package main
 
 import (
 	"log"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/slack-go/slack"
@@ -57,6 +59,8 @@ func createChannels(conversations []slack.Channel, now time.Time, yesterDay time
 	oldest := strconv.FormatInt(time.Date(yesterDay.Year(), yesterDay.Month(), yesterDay.Day(), 0, 0, 0, 0, yesterDay.Location()).Unix(), 10)
 	var channels []Channel
 	var count int
+
+	hostCount := map[string]int{}
 	for _, conversation := range conversations {
 		params := slack.GetConversationHistoryParameters{ChannelID: conversation.ID, Limit: 1000, Latest: latest, Oldest: oldest}
 		conversationHistory, err := userClient.GetConversationHistory(&params)
@@ -67,7 +71,7 @@ func createChannels(conversations []slack.Channel, now time.Time, yesterDay time
 		channel := Channel{name: conversation.Name, id: conversation.ID}
 		for _, message := range conversationHistory.Messages {
 			count++
-			addUser(&channel, message, conversationHistory.Messages)
+			addUser(&channel, message, conversationHistory.Messages, &hostCount)
 		}
 		channels = append(channels, channel)
 	}
@@ -90,13 +94,15 @@ func createMessage(yesterDay time.Time, channels []Channel, count int) string {
 	return message
 }
 
-func addUser(channel *Channel, message slack.Message, threads []slack.Message) {
+func addUser(channel *Channel, message slack.Message, threads []slack.Message, hostCount *map[string]int) {
 	var name string
 	name = setName(name, message)
+	increment(hostCount, message)
 	if name == "" {
 		for _, thread := range threads {
 			if thread.ThreadTimestamp == message.ThreadTimestamp {
 				name = setName(name, thread)
+				increment(hostCount, message)
 			}
 		}
 	}
@@ -116,4 +122,19 @@ func setName(name string, message slack.Message) string {
 		name = message.BotProfile.Name
 	}
 	return name
+}
+
+func increment(hostCount *map[string]int, message slack.Message) {
+	if !strings.HasPrefix(message.Msg.Text, "<http") {
+		return
+	}
+	url, error := url.Parse(strings.Split(message.Msg.Text[1:], "|")[0])
+	if error != nil {
+		return
+	}
+	if _, ok := (*hostCount)[url.Host]; ok {
+		(*hostCount)[url.Host]++
+	} else {
+		(*hostCount)[url.Host] = 1
+	}
 }
