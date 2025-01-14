@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/url"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"time"
 
 	"github.com/slack-go/slack"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/sdk/metric"
 )
 
 type Site struct {
@@ -76,6 +79,28 @@ func createChannels(conversations []slack.Channel, now time.Time, yesterDay time
 		channels = append(channels, channel)
 	}
 	sort.Slice(channels, func(i, j int) bool { return channels[i].name < channels[j].name })
+	ctx := context.Background()
+	exp, err := otlpmetricgrpc.New(ctx,
+		otlpmetricgrpc.WithInsecure(),
+	)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	meterProvider := metric.NewMeterProvider(metric.WithReader(
+		metric.NewPeriodicReader(exp, metric.WithInterval(time.Hour*24)),
+	))
+	defer meterProvider.Shutdown(ctx)
+	meter := meterProvider.Meter("github.com/tkmsaaaam/manage-slack")
+	for k, v := range hostCount {
+		counter, err := meter.Int64Counter(
+			k, nil,
+		)
+		if err != nil {
+			log.Println("Can not make conunter", err)
+			continue
+		}
+		counter.Add(ctx, int64(v))
+	}
 	return channels, count
 }
 
