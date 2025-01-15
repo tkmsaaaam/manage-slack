@@ -3,7 +3,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/url"
 	"os"
@@ -12,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/slack-go/slack"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/sdk/metric"
 )
 
 type Site struct {
@@ -79,28 +78,7 @@ func createChannels(conversations []slack.Channel, now time.Time, yesterDay time
 		channels = append(channels, channel)
 	}
 	sort.Slice(channels, func(i, j int) bool { return channels[i].name < channels[j].name })
-	ctx := context.Background()
-	exp, err := otlpmetricgrpc.New(ctx,
-		otlpmetricgrpc.WithInsecure(),
-	)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	meterProvider := metric.NewMeterProvider(metric.WithReader(
-		metric.NewPeriodicReader(exp, metric.WithInterval(time.Hour*24)),
-	))
-	defer meterProvider.Shutdown(ctx)
-	meter := meterProvider.Meter("github.com/tkmsaaaam/manage-slack")
-	for k, v := range hostCount {
-		counter, err := meter.Int64Counter(
-			k, nil,
-		)
-		if err != nil {
-			log.Println("Can not make conunter", err)
-			continue
-		}
-		counter.Add(ctx, int64(v))
-	}
+	sendMetrics(hostCount)
 	return channels, count
 }
 
@@ -161,5 +139,24 @@ func increment(hostCount *map[string]int, message slack.Message) {
 		(*hostCount)[url.Host]++
 	} else {
 		(*hostCount)[url.Host] = 1
+	}
+}
+
+func sendMetrics(hostCount map[string]int) {
+	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
+	if url == "" {
+		return
+	}
+	for k, v := range hostCount {
+		n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
+		counter := prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: "slack",
+			Name:      n,
+			Help:      k + " messages count",
+		})
+		counter.Add(float64(v))
+		if err := push.New(url, n).Collector(counter).Push(); err != nil {
+			log.Println("can not push", err)
+		}
 	}
 }
