@@ -151,6 +151,7 @@ func sendMetrics(hostCount map[string]int) {
 			Namespace: "slack",
 			Name:      n,
 			Help:      k + " messages count",
+			ConstLabels: map[string]string{"pusher": "slack-daily"},
 		})
 		counter.Add(float64(v))
 		if err := push.New(url, n).Collector(counter).Push(); err != nil {
