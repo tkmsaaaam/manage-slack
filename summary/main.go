@@ -148,10 +148,10 @@ func sendMetrics(hostCount map[string]int) {
 	for k, v := range hostCount {
 		n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
 		counter := prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: "slack",
-			Name:      n,
-			Help:      k + " messages count",
-			ConstLabels: map[string]string{"pusher": "slack-daily"},
+			Namespace:   "slack",
+			Name:        n,
+			Help:        k + " messages count",
+			ConstLabels: prometheus.Labels{"pusher": "slack-daily"},
 		})
 		counter.Add(float64(v))
 		if err := push.New(url, n).Collector(counter).Push(); err != nil {
