@@ -79,7 +79,7 @@ func TestGetConversationsForUser(t *testing.T) {
 	}
 }
 
-func TestCreateChannels(t *testing.T) {
+func TestMakeResult(t *testing.T) {
 	type args struct {
 		conversations []slack.Channel
 		now           time.Time
@@ -140,7 +140,7 @@ func TestCreateChannels(t *testing.T) {
 			}()
 
 			c := &config{userClient: client}
-			_, _, actual := c.createChannels(tt.args.conversations)
+			_, _, actual := c.makeResult(tt.args.conversations)
 			if len(actual) != len(tt.want.mapByChannel) {
 				t.Errorf("createChannels() = %v, want %v", actual, tt.want.mapByChannel)
 			}

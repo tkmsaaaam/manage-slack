@@ -28,17 +28,20 @@ func main() {
 	c := &config{userClient: userClient, now: now, yesterDay: yesterDay}
 	conversations := c.getConversationsForUser()
 
-	channelMap := makeChannelMap(conversations)
+	channelById := map[string]slack.Channel{}
+	for _, channel := range conversations {
+		channelById[channel.ID] = channel
+	}
 
-	mapBySiteByChannel, mapByHost, mapByChannel := c.createChannels(conversations)
+	countBySiteByChannel, countByHost, countBychannel := c.makeResult(conversations)
 
-	message := c.createMessage(mapBySiteByChannel, mapByChannel, channelMap)
+	message := c.createMessage(countBySiteByChannel, countBychannel, channelById)
 	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 	_, _, err := botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, false))
 	if err != nil {
 		log.Printf("can not post: %v\n", err)
 	}
-	sendMetrics(mapByHost, mapByChannel, channelMap)
+	sendMetrics(countByHost, countBychannel, channelById)
 }
 
 func (c *config) getConversationsForUser() []slack.Channel {
@@ -49,13 +52,13 @@ func (c *config) getConversationsForUser() []slack.Channel {
 	return conversations
 }
 
-func (c *config) createChannels(conversations []slack.Channel) (map[string]map[string]int, map[string]int, map[string]int) {
+func (c *config) makeResult(conversations []slack.Channel) (map[string]map[string]int, map[string]int, map[string]int) {
 	latest := strconv.FormatInt(time.Date(c.now.Year(), c.now.Month(), c.now.Day(), 0, 0, 0, 0, c.now.Location()).Unix(), 10)
 	oldest := strconv.FormatInt(time.Date(c.yesterDay.Year(), c.yesterDay.Month(), c.yesterDay.Day(), 0, 0, 0, 0, c.yesterDay.Location()).Unix(), 10)
 
-	mapBySiteByChannel := map[string]map[string]int{}
-	mapByHost := map[string]int{}
-	mapByChannel := map[string]int{}
+	countBySiteByChannel := map[string]map[string]int{}
+	countByHost := map[string]int{}
+	countByChannel := map[string]int{}
 
 	for _, conversation := range conversations {
 		params := slack.GetConversationHistoryParameters{ChannelID: conversation.ID, Limit: 1000, Latest: latest, Oldest: oldest}
@@ -66,7 +69,7 @@ func (c *config) createChannels(conversations []slack.Channel) (map[string]map[s
 		}
 
 		i := len(conversationHistory.Messages)
-		mapByUserName := map[string]int{}
+		countByUser := map[string]int{}
 		for _, message := range conversationHistory.Messages {
 			i += message.ReplyCount
 
@@ -75,7 +78,7 @@ func (c *config) createChannels(conversations []slack.Channel) (map[string]map[s
 				if error != nil {
 					continue
 				}
-				mapByHost[url.Host] += 1
+				countByHost[url.Host] += 1
 			}
 
 			userName := ""
@@ -87,31 +90,23 @@ func (c *config) createChannels(conversations []slack.Channel) (map[string]map[s
 			if userName == "" {
 				continue
 			}
-			mapByUserName[userName] += 1
+			countByUser[userName] += 1
 		}
 
-		mapByChannel[conversation.ID] = i
-		mapBySiteByChannel[conversation.ID] = mapByUserName
+		countByChannel[conversation.ID] = i
+		countBySiteByChannel[conversation.ID] = countByUser
 	}
-	return mapBySiteByChannel, mapByHost, mapByChannel
+	return countBySiteByChannel, countByHost, countByChannel
 }
 
-func makeChannelMap(channels []slack.Channel) map[string]slack.Channel {
-	channelMap := map[string]slack.Channel{}
-	for _, channel := range channels {
-		channelMap[channel.ID] = channel
-	}
-	return channelMap
-}
-
-func (c *config) createMessage(mapBySiteByChannel map[string]map[string]int, mapByChannel map[string]int, channelMap map[string]slack.Channel) string {
+func (c *config) createMessage(countBySiteByChannel map[string]map[string]int, countByChannel map[string]int, channelById map[string]slack.Channel) string {
 	count := 0
-	for _, v := range mapByChannel {
+	for _, v := range countByChannel {
 		count += v
 	}
 	var message = c.yesterDay.Format("2006-01-02") + "\n" + c.yesterDay.Format("Monday") + "\n" + strconv.FormatInt(int64(count), 10) + "\n"
-	for _, channel := range channelMap {
-		mapBySite, ok := mapBySiteByChannel[channel.ID]
+	for _, channel := range channelById {
+		mapBySite, ok := countBySiteByChannel[channel.ID]
 		if !ok {
 			continue
 		}
@@ -126,12 +121,12 @@ func (c *config) createMessage(mapBySiteByChannel map[string]map[string]int, map
 	return message
 }
 
-func sendMetrics(mapByHost map[string]int, mapByChannel map[string]int, channelMap map[string]slack.Channel) {
+func sendMetrics(countByHost map[string]int, countByChannel map[string]int, channelById map[string]slack.Channel) {
 	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
 	if url == "" {
 		return
 	}
-	for k, v := range mapByHost {
+	for k, v := range countByHost {
 		n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
 		counter := prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   "slack",
@@ -144,17 +139,19 @@ func sendMetrics(mapByHost map[string]int, mapByChannel map[string]int, channelM
 			log.Println("can not push", err)
 		}
 	}
-	for k, v := range mapByChannel {
-		name := k
-		name = channelMap[k].Name
-		n := strings.ReplaceAll(name, "-", "_")
+	for _, v := range channelById {
+		n := strings.ReplaceAll(v.Name, "-", "_")
 		counter := prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   "slack",
 			Name:        n,
-			Help:        k + " messages count by channel",
+			Help:        v.Name + " messages count by channel",
 			ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": "channel"},
 		})
-		counter.Add(float64(v))
+		i := 0
+		if v, ok := countByChannel[v.ID]; ok {
+			i = v
+		}
+		counter.Add(float64(i))
 		if err := push.New(url, n).Collector(counter).Push(); err != nil {
 			log.Println("can not push", err)
 		}
