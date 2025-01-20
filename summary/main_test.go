@@ -87,7 +87,6 @@ func TestMakeResult(t *testing.T) {
 	}
 	type want struct {
 		mapByChannel map[string]int
-		count        int
 		err          string
 	}
 	now := time.Now()
