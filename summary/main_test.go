@@ -69,11 +69,11 @@ func TestGetConversationsForUser(t *testing.T) {
 			got := c.getConversationsForUser()
 
 			if len(got) != len(tt.want.channels) {
-				t.Errorf("add() = %v, want %v", got, tt.want.channels)
+				t.Errorf("len(getConversationsForUser) = %v, want %v", got, tt.want.channels)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+				t.Errorf("getConversationsForUser() print = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}
@@ -195,7 +195,7 @@ func TestCreateMessage(t *testing.T) {
 			c := &config{yesterDay: tt.args.yesterDay}
 			got := c.createMessage(tt.args.mapBySiteByChannel, tt.args.mapByChannel, tt.args.channelMap)
 			if got != tt.want {
-				t.Errorf("add() = \n%v, want \n%v", got, tt.want)
+				t.Errorf("createMessage() = \n%v, want \n%v", got, tt.want)
 			}
 		})
 	}

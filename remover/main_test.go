@@ -60,11 +60,11 @@ func TestGetChannels(t *testing.T) {
 			gotChannels, err := SlackClient{client}.getChannels()
 
 			if len(gotChannels) != len(tt.want.channels) {
-				t.Errorf("add() = %v, want %v", gotChannels, tt.want.channels)
+				t.Errorf("getChannels() = %v, want %v", gotChannels, tt.want.channels)
 			}
 			if err != nil || tt.want.err != nil {
 				if err.Error() != tt.want.err.Error() {
-					t.Errorf("add() = %v, want %v", err, tt.want.err)
+					t.Errorf("getChannels() = %v, want %v", err, tt.want.err)
 				}
 			}
 		})
@@ -118,11 +118,11 @@ func TestPostStartMessage(t *testing.T) {
 			got := SlackClient{client}.postStartMessage()
 
 			if got != tt.want.ts {
-				t.Errorf("add() = %v, want %v", got, tt.want.ts)
+				t.Errorf("postStartMessage() = %v, want %v", got, tt.want.ts)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+				t.Errorf("postStartMessage() = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}
@@ -181,7 +181,7 @@ func TestPostEndMessage(t *testing.T) {
 
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
+				t.Errorf("postEndMessage() = %v, want %v", gotPrint, tt.want)
 			}
 		})
 	}
@@ -244,7 +244,7 @@ func TestDeleteMessage(t *testing.T) {
 
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want)
+				t.Errorf("deleteMessage() = %v, want %v", gotPrint, tt.want)
 			}
 		})
 	}
@@ -289,11 +289,11 @@ func TestMakeDays(t *testing.T) {
 			got := makeDays(tt.arg)
 
 			if got != tt.want.res {
-				t.Errorf("add() = %v, want %v", got, tt.want.res)
+				t.Errorf("makeDays() = %v, want %v", got, tt.want.res)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+				t.Errorf("makeDays() print = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}
@@ -391,11 +391,11 @@ func TestLoopInAllChannels(t *testing.T) {
 			got := SlackClient{client}.loopInAllChannels(tt.args.channels, tt.args.now, tt.args.days)
 
 			if got != tt.want.count {
-				t.Errorf("add() = %v, want %v", got, tt.want.count)
+				t.Errorf("loopInAllChannels() = %v, want %v", got, tt.want.count)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+				t.Errorf("loopInAllChannels() print = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}
@@ -476,11 +476,11 @@ func TestDeleteFiles(t *testing.T) {
 			got := SlackClient{client}.deleteFiles(tt.args.now, tt.args.days)
 
 			if got != tt.want.count {
-				t.Errorf("add() = %v, want %v", got, tt.want.count)
+				t.Errorf("deleteFiles() = %v, want %v", got, tt.want.count)
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {
-				t.Errorf("add() = %v, want %v", gotPrint, tt.want.print)
+				t.Errorf("deleteFiles() = %v, want %v", gotPrint, tt.want.print)
 			}
 		})
 	}
