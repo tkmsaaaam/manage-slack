@@ -74,11 +74,10 @@ func (c *config) makeResult(conversations []slack.Channel) (map[string]map[strin
 			i += message.ReplyCount
 
 			if strings.HasPrefix(message.Msg.Text, "<http") {
-				url, error := url.Parse(strings.Split(message.Msg.Text[1:], "|")[0])
-				if error != nil {
-					continue
+				url, err := url.Parse(strings.Split(message.Msg.Text[1:], "|")[0])
+				if err == nil && url.Host != "" {
+					countByHost[url.Host] += 1
 				}
-				countByHost[url.Host] += 1
 			}
 
 			userName := ""

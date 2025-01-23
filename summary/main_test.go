@@ -86,8 +86,10 @@ func TestMakeResult(t *testing.T) {
 		yesterDay     time.Time
 	}
 	type want struct {
-		mapByChannel map[string]int
-		err          string
+		countBySiteByChannel map[string]map[string]int
+		countByHost          map[string]int
+		countByChannel       map[string]int
+		err                  string
 	}
 	now := time.Now()
 	yesterDay := now.AddDate(0, 0, -1)
@@ -101,19 +103,31 @@ func TestMakeResult(t *testing.T) {
 			name:   "aMessage",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/aMessage.json",
-			want:   want{mapByChannel: map[string]int{"ABCDEF12345": 1}},
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {}}, countByHost: map[string]int{}, countByChannel: map[string]int{"ABCDEF12345": 1}},
+		},
+		{
+			name:   "aMessageWithLink",
+			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
+			apiRes: "testdata/conversationsHistory/messageWithLink.json",
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {"bot-user-name": 1}}, countByHost: map[string]int{"example.com": 1}, countByChannel: map[string]int{"ABCDEF12345": 1}},
+		},
+		{
+			name:   "aMessageWithInvalidLink",
+			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
+			apiRes: "testdata/conversationsHistory/messageWithInvalidLink.json",
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {"ABCDEF123": 1}}, countByHost: map[string]int{}, countByChannel: map[string]int{"ABCDEF12345": 1}},
 		},
 		{
 			name:   "twoMessageInDefferentChannel",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/aMessage.json",
-			want:   want{mapByChannel: map[string]int{"ABCDEF01234": 1, "ABCDEF12345": 1}},
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {}, "ABCDEF01234": {}}, countByHost: map[string]int{}, countByChannel: map[string]int{"ABCDEF01234": 1, "ABCDEF12345": 1}},
 		},
 		{
 			name:   "twoMessageInDefferentChannelWithError",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/error.json",
-			want:   want{mapByChannel: map[string]int{}, err: "can not get history channelID: ABCDEF01234, channel_not_found\ncan not get history channelID: ABCDEF12345, channel_not_found"},
+			want:   want{countByHost: map[string]int{}, countByChannel: map[string]int{}, err: "can not get history channelID: ABCDEF01234, channel_not_found\ncan not get history channelID: ABCDEF12345, channel_not_found"},
 		},
 	}
 
@@ -139,14 +153,41 @@ func TestMakeResult(t *testing.T) {
 			}()
 
 			c := &config{userClient: client}
-			_, _, actual := c.makeResult(tt.args.conversations)
-			if len(actual) != len(tt.want.mapByChannel) {
-				t.Errorf("createChannels() = %v, want %v", actual, tt.want.mapByChannel)
+			actualCountBySiteByChannel, actualCountByHost, actualCountByChannel := c.makeResult(tt.args.conversations)
+			if len(actualCountByChannel) != len(tt.want.countByChannel) {
+				t.Errorf("len(createChannels().countByChannel) = %v, want %v", actualCountByChannel, tt.want.countByChannel)
 			}
-			if len(actual) > 0 {
-				for k, v := range actual {
-					if v != tt.want.mapByChannel[k] {
-						t.Errorf("createChannels() = %v, want %v", v, tt.want.mapByChannel[k])
+			if len(actualCountByChannel) > 0 {
+				for k, v := range tt.want.countByChannel {
+					if v != tt.want.countByChannel[k] {
+						t.Errorf("createChannels() countByChannel = %v, want %v", actualCountByChannel[k], v)
+					}
+
+				}
+			}
+			if len(actualCountByHost) != len(tt.want.countByHost) {
+				t.Errorf("len(createChannels().countByHost) = %v, want %v", actualCountByHost, tt.want.countByHost)
+			}
+			if len(actualCountByHost) > 0 {
+				for k, v := range tt.want.countByHost {
+					if v != actualCountByHost[k] {
+						t.Errorf("createChannels() countByHost %v = %v (%v), want %v(%v)", k, actualCountByHost[k], actualCountByHost, v, tt.want.countByHost)
+					}
+
+				}
+			}
+			if len(actualCountBySiteByChannel) != len(tt.want.countBySiteByChannel) {
+				t.Errorf("len(createChannels().countBySiteByChannel) = %v, want %v", actualCountBySiteByChannel, tt.want.countBySiteByChannel)
+			}
+			if len(actualCountBySiteByChannel) > 0 {
+				for k, v := range tt.want.countBySiteByChannel {
+					if len(v) != len(actualCountBySiteByChannel[k]) {
+						t.Errorf("len(createChannels() countBySiteByChannel) %v = %v (%v), want %v(%v)", k, actualCountBySiteByChannel[k], actualCountBySiteByChannel, v, tt.want.countBySiteByChannel)
+					}
+					for kk, vv := range v {
+						if vv != actualCountBySiteByChannel[k][kk] {
+							t.Errorf("createChannels() countByHost %v = %v (%v), want %v(%v)", kk, actualCountBySiteByChannel[k][kk], actualCountBySiteByChannel, vv, tt.want.countBySiteByChannel)
+						}
 					}
 
 				}

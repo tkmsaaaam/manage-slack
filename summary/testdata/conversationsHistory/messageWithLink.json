@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "type": "message",
+      "bot_profile": {
+        "name": "bot-user-name"
+      },
+      "text": "<https://example.com|text A>",
+      "ts": "1512085950.000216"
+    }
+  ]
+}

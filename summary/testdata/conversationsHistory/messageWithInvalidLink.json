@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "type": "message",
+      "username": "ABCDEF123",
+      "text": "<http:/example.com|text A>",
+      "ts": "1512085950.000216"
+    }
+  ]
+}
