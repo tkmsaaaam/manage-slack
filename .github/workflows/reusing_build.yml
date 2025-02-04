@@ -8,7 +8,8 @@ on:
 permissions:
   actions: write
 env:
-  FILE_NAME: ${{ inputs.FILE_NAME}}
+  FILE_NAME: ${{ inputs.FILE_NAME }}
+  DIR_NAME: ${{ inputs.DIR_NAME }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -51,7 +52,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
         if: steps.cache-hit.outputs.cache-hit != 'true'
-        run: GOFILE=${{ env.FILE_NAME }}.go && go build $GOFILE
+        run: GOFILE=${{ env.FILE_NAME }}.go && cd ${{ env.DIR_NAME }} && go build $GOFILE
       - name: Add cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
