@@ -5,6 +5,9 @@ on:
       FILE_NAME:
         type: string
         required: true
+      DIR_NAME:
+        type: string
+        required: true
 permissions:
   actions: write
 env:
