@@ -21,5 +21,5 @@ jobs:
   build-daily:
     uses: ./.github/workflows/reusing_build.yml
     with:
-      FILE_NAME: daily
+      FILE_NAME: main
       DIR_NAME: summary
