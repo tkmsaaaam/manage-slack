@@ -60,5 +60,5 @@ jobs:
         if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
-          path: ${{ github.workspace }}/${{ env.FILE_NAME }}
+          path: ${{ github.workspace }}/${{ env.DIR_NAME }}/${{ env.FILE_NAME }}
           key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
