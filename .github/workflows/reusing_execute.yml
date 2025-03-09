@@ -46,7 +46,7 @@ jobs:
             const { FILE_NAME, DIR_NAME } = process.env
             return DIR_NAME == ''
       - name: Restore Cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}${{ env.FILE_NAME }}
           key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-

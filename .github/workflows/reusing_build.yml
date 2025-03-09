@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Is Dir Name Null
         uses: actions/github-script@v6
         id: is_dir_name_null
@@ -28,7 +28,7 @@ jobs:
             return DIR_NAME == ''
       - name: Check Cache Hit
         id: cache-hit
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}${{ env.FILE_NAME }}
           key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
@@ -50,12 +50,12 @@ jobs:
           | xargs -I% gh actions-cache delete % -R $GITHUB_REPOSITORY --confirm
       - name: Setup Go
         if: steps.cache-hit.outputs.cache-hit != 'true'
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version-file: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}go.mod
       - name: setup cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -65,7 +65,7 @@ jobs:
         run: GOFILE=${{ env.FILE_NAME }}.go && cd ${{ steps.is_dir_name_null.outputs.result == 'true' && '.' || env.DIR_NAME }} && pwd && go build $GOFILE
       - name: Add cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: ${{ github.workspace }}/${{ env.DIR_NAME }}/${{ env.FILE_NAME }}
           key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
