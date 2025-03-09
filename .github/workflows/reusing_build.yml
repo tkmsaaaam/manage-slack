@@ -45,7 +45,7 @@ jobs:
         if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ env.DIR_NAME }}${{ env.DIR_NAME == '' && '' ||  '/' }}go.mod
+          go-version-file: ${{ env.DIR_NAME }}${{ env.DIR_NAME == null && '' ||  '/' }}go.mod
       - name: setup cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache@v3
