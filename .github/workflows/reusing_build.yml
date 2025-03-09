@@ -23,7 +23,9 @@ jobs:
         uses: actions/github-script@v6
         id: is_dir_name_null
         with:
-          script: return env.DIR_NAME === null
+          script: |
+            const { FILE_NAME, DIR_NAME } = process.env
+            return DIR_NAME === null
       - name: Check Cache Hit
         id: cache-hit
         uses: actions/cache/restore@v3
