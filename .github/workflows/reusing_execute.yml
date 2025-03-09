@@ -14,6 +14,9 @@ on:
       timeout:
         required: false
         type: string
+      dirName:
+        required: false
+        type: string
     secrets:
       CITY_ID:
         required: false
@@ -31,13 +34,23 @@ jobs:
   execute:
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout || 10 }}
+    env:
+      DIR_NAME: ${{ inputs.dirName }}
+      FILE_NAME: ${{ inputs.fileName }}
     steps:
+      - name: Is Dir Name Null
+        uses: actions/github-script@v6
+        id: is_dir_name_null
+        with:
+          script: |
+            const { FILE_NAME, DIR_NAME } = process.env
+            return DIR_NAME == ''
       - name: Restore Cache
         uses: actions/cache/restore@v3
         with:
-          path: ${{ github.workspace }}/${{ inputs.fileName }}
-          key: ${{ runner.os }}-go-${{ inputs.cacheName }}
-          restore-keys: ${{ runner.os }}-go-${{ inputs.cacheName }}
+          path: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}${{ env.FILE_NAME }}
+          key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-
+          restore-keys: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-
       - name: Execute Post Daily report
         run: ${{ github.workspace }}/${{ inputs.fileName }}
         env:
