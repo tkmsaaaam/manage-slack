@@ -25,17 +25,13 @@ jobs:
         with:
           script: |
             const { FILE_NAME, DIR_NAME } = process.env
-            console.log(DIR_NAME === null)
-            console.log(DIR_NAME === '')
-            console.log(DIR_NAME == '')
-            console.log(DIR_NAME === undefined)
-            return DIR_NAME === null
+            return DIR_NAME == ''
       - name: Check Cache Hit
         id: cache-hit
         uses: actions/cache/restore@v3
         with:
-          path: ${{ github.workspace }}/${{ env.FILE_NAME }}
-          key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
+          path: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}${{ env.FILE_NAME }}
+          key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
       - name: Extension install
         if: steps.cache-hit.outputs.cache-hit != 'true'
         env:
@@ -44,7 +40,7 @@ jobs:
       - name: Remove old cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
         env:
-          MAINCACHE: ${{ runner.os }}-go-${{ env.FILE_NAME }}-
+          MAINCACHE: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-
         run: |
           gh actions-cache list -R $GITHUB_REPOSITORY \
           | xargs -I@ echo @ \
@@ -66,10 +62,10 @@ jobs:
           restore-keys: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Build
         if: steps.cache-hit.outputs.cache-hit != 'true'
-        run: GOFILE=${{ env.FILE_NAME }}.go && cd ${{ env.DIR_NAME }} && go build $GOFILE
+        run: GOFILE=${{ env.FILE_NAME }}.go && cd ${{ steps.is_dir_name_null.outputs.result == 'true' && '.' || env.DIR_NAME }} && pwd && go build $GOFILE
       - name: Add cache
         if: steps.cache-hit.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/${{ env.DIR_NAME }}/${{ env.FILE_NAME }}
-          key: ${{ runner.os }}-go-${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
+          key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-${{ hashFiles('**/go.sum', format('{0}.go', env.FILE_NAME)) }}
