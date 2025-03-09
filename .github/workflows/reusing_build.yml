@@ -25,6 +25,10 @@ jobs:
         with:
           script: |
             const { FILE_NAME, DIR_NAME } = process.env
+            console.log(DIR_NAME === null)
+            console.log(DIR_NAME === '')
+            console.log(DIR_NAME == '')
+            console.log(DIR_NAME === undefined)
             return DIR_NAME === null
       - name: Check Cache Hit
         id: cache-hit
