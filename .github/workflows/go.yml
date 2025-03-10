@@ -29,3 +29,4 @@ jobs:
       cacheName: main
       fileName: main
       timeout: ${{ github.event.inputs.timeout }}
+      dirName: remover

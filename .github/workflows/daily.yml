@@ -18,3 +18,4 @@ jobs:
     with:
       cacheName: daily
       fileName: main
+      dirName: summary
