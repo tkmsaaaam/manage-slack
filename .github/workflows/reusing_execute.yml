@@ -51,8 +51,8 @@ jobs:
           path: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}${{ env.FILE_NAME }}
           key: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-
           restore-keys: ${{ runner.os }}-go-${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '-' }}${{ env.FILE_NAME }}-
-      - name: Execute Post Daily report
-        run: ${{ github.workspace }}/${{ inputs.fileName }}
+      - name: Execute
+        run: ${{ github.workspace }}/${{ env.DIR_NAME }}${{ steps.is_dir_name_null.outputs.result == 'true' && '' ||  '/' }}${{ env.FILE_NAME }}
         env:
           CITY_ID: ${{ secrets.CITY_ID }}
           DAYS: ${{ inputs.days }}
