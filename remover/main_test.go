@@ -57,7 +57,7 @@ func TestGetChannels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Helper()
 
-			gotChannels, err := SlackClient{client}.getChannels()
+			gotChannels, err := (&SlackClient{client}).getChannels()
 
 			if len(gotChannels) != len(tt.want.channels) {
 				t.Errorf("getChannels() = %v, want %v", gotChannels, tt.want.channels)
@@ -115,7 +115,7 @@ func TestPostStartMessage(t *testing.T) {
 				buf.Reset()
 			}()
 
-			got := SlackClient{client}.postStartMessage()
+			got := (&SlackClient{client}).postStartMessage()
 
 			if got != tt.want.ts {
 				t.Errorf("postStartMessage() = %v, want %v", got, tt.want.ts)
@@ -177,7 +177,7 @@ func TestPostEndMessage(t *testing.T) {
 				buf.Reset()
 			}()
 
-			SlackClient{client}.postEndMessage(tt.args.start, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
+			(&SlackClient{client}).postEndMessage(tt.args.start, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
 
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
@@ -240,7 +240,7 @@ func TestDeleteMessage(t *testing.T) {
 				buf.Reset()
 			}()
 
-			SlackClient{client}.deleteMessage(tt.args.id, tt.args.ts)
+			(&SlackClient{client}).deleteMessage(tt.args.id, tt.args.ts)
 
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
@@ -388,7 +388,7 @@ func TestLoopInAllChannels(t *testing.T) {
 				buf.Reset()
 			}()
 
-			got := SlackClient{client}.loopInAllChannels(tt.args.channels, tt.args.now, tt.args.days)
+			got := (&SlackClient{client}).loopInAllChannels(tt.args.channels, tt.args.now, tt.args.days)
 
 			if got != tt.want.count {
 				t.Errorf("loopInAllChannels() = %v, want %v", got, tt.want.count)
@@ -473,7 +473,7 @@ func TestDeleteFiles(t *testing.T) {
 				buf.Reset()
 			}()
 
-			got := SlackClient{client}.deleteFiles(tt.args.now, tt.args.days)
+			got := (&SlackClient{client}).deleteFiles(tt.args.now, tt.args.days)
 
 			if got != tt.want.count {
 				t.Errorf("deleteFiles() = %v, want %v", got, tt.want.count)
