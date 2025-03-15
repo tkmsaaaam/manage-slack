@@ -39,7 +39,7 @@ func main() {
 	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 	_, _, err := botClient.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, false))
 	if err != nil {
-		log.Printf("can not post: %v\n", err)
+		log.Println("can not post:", err)
 	}
 	sendMetrics(countByHost, countBychannel, channelById)
 }
@@ -47,7 +47,7 @@ func main() {
 func (c *config) getConversationsForUser() []slack.Channel {
 	conversations, _, err := c.userClient.GetConversationsForUser(&slack.GetConversationsForUserParameters{})
 	if err != nil {
-		log.Printf("can not get channels: %v\n", err)
+		log.Println("can not get channels:", err)
 	}
 	return conversations
 }
@@ -64,7 +64,7 @@ func (c *config) makeResult(conversations []slack.Channel) (map[string]map[strin
 		params := slack.GetConversationHistoryParameters{ChannelID: conversation.ID, Limit: 1000, Latest: latest, Oldest: oldest}
 		conversationHistory, err := c.userClient.GetConversationHistory(&params)
 		if err != nil {
-			log.Printf("can not get history channelID: %s, %v\n", conversation.ID, err)
+			log.Println("can not get history channelID:", conversation.ID, err)
 			continue
 		}
 
