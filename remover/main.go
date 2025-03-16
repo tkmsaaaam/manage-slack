@@ -81,10 +81,11 @@ func (client *SlackClient) loopInAllChannels(channels []slack.Channel, now time.
 				replies, _, _, err := client.GetConversationReplies(&repliesParams)
 				if err != nil {
 					log.Println("Can not get replies:", err)
-				}
-				for _, reply := range replies {
-					count++
-					client.deleteMessage(id, reply.Msg.Timestamp)
+				} else {
+					for _, reply := range replies {
+						count++
+						client.deleteMessage(id, reply.Msg.Timestamp)
+					}
 				}
 			}
 			client.deleteMessage(id, message.Msg.Timestamp)
