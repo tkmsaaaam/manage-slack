@@ -2,7 +2,7 @@ module github.com/tkmsaaaam/manage-slack/remover
 
 go 1.23
 
-require github.com/slack-go/slack v0.15.0
+require github.com/slack-go/slack v0.16.0
 
 require (
 	github.com/google/go-cmp v0.6.0 // indirect
