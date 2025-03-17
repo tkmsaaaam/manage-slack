@@ -126,33 +126,27 @@ func sendMetrics(countByHost map[string]int, countByChannel map[string]int, chan
 		return
 	}
 	for k, v := range countByHost {
-		n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
-		counter := prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace:   "slack",
-			Name:        n,
-			Help:        k + " messages count by host",
-			ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": "host"},
-		})
-		counter.Add(float64(v))
-		if err := push.New(url, n).Collector(counter).Push(); err != nil {
-			log.Println("can not push", err)
-		}
+		send(url, k, "host", v)
 	}
 	for _, v := range channelById {
-		n := strings.ReplaceAll(v.Name, "-", "_")
-		counter := prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace:   "slack",
-			Name:        n,
-			Help:        v.Name + " messages count by channel",
-			ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": "channel"},
-		})
 		i := 0
 		if v, ok := countByChannel[v.ID]; ok {
 			i = v
 		}
-		counter.Add(float64(i))
-		if err := push.New(url, n).Collector(counter).Push(); err != nil {
-			log.Println("can not push", err)
-		}
+		send(url, v.Name, "channel", i)
+	}
+}
+
+func send(url, k, grouping string, v int) {
+	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
+	counter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace:   "slack",
+		Name:        n,
+		Help:        k + " messages count by " + grouping,
+		ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": grouping},
+	})
+	counter.Add(float64(v))
+	if err := push.New(url, n).Collector(counter).Push(); err != nil {
+		log.Println("can not push", err)
 	}
 }
