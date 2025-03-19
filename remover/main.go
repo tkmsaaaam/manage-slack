@@ -5,8 +5,11 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/slack-go/slack"
 )
 
@@ -115,6 +118,19 @@ func (client *SlackClient) deleteFiles(now time.Time, days int) int {
 	return count
 }
 
+func send(url, k string, v int) {
+	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
+	counter := prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace:   "slack",
+		Name:        n,
+		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
+	})
+	counter.Add(float64(v))
+	if err := push.New(url, n).Collector(counter).Push(); err != nil {
+		log.Println("can not push", err)
+	}
+}
+
 func main() {
 	botClient := &SlackClient{slack.New(os.Getenv("SLACK_BOT_TOKEN"))}
 	userClient := &SlackClient{slack.New(os.Getenv("SLACK_USER_TOKEN"))}
@@ -130,4 +146,10 @@ func main() {
 	messageCount := userClient.loopInAllChannels(channels, start, days)
 	fileCount := botClient.deleteFiles(start, days)
 	botClient.postEndMessage(start, ts, messageCount, fileCount)
+	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
+	if url == "" {
+		return
+	}
+	send(url, "deleted_messages", messageCount)
+	send(url, "deleted_files", fileCount)
 }
