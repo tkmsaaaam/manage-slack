@@ -33,8 +33,7 @@ func (client *SlackClient) postStartMessage() string {
 	return ts
 }
 
-func (client *SlackClient) postEndMessage(start time.Time, ts string, messageCount int, fileCount int) {
-	duration := time.Since(start)
+func (client *SlackClient) postEndMessage(duration time.Duration, ts string, messageCount int, fileCount int) {
 	avg := float64(messageCount) / duration.Seconds()
 	message := "タスク実行を終了します\n" + duration.String() + "\n" + "message count: " + strconv.FormatInt(int64(messageCount), 10) + "\n" + "avg: " + strconv.FormatFloat(avg, 'f', -1, 64) + "/s" + "\n" + "file count: " + strconv.FormatInt(int64(fileCount), 10)
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
@@ -118,7 +117,7 @@ func (client *SlackClient) deleteFiles(now time.Time, days int) int {
 	return count
 }
 
-func send(url, k string, v int) {
+func sendCounter(url, k string, v int) {
 	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
 	counter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "slack",
@@ -132,6 +131,12 @@ func send(url, k string, v int) {
 }
 
 func main() {
+	var requestDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:    "slack_remover_request_duration_seconds",
+		Buckets: prometheus.LinearBuckets(0.01, 0.01, 10),
+	})
+	timer := prometheus.NewTimer(requestDuration)
+	defer timer.ObserveDuration()
 	botClient := &SlackClient{slack.New(os.Getenv("SLACK_BOT_TOKEN"))}
 	userClient := &SlackClient{slack.New(os.Getenv("SLACK_USER_TOKEN"))}
 	start := time.Now()
@@ -145,11 +150,12 @@ func main() {
 	days := makeDays(daysStr)
 	messageCount := userClient.loopInAllChannels(channels, start, days)
 	fileCount := botClient.deleteFiles(start, days)
-	botClient.postEndMessage(start, ts, messageCount, fileCount)
+	duration := time.Since(start)
+	botClient.postEndMessage(duration, ts, messageCount, fileCount)
 	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
 	if url == "" {
 		return
 	}
-	send(url, "deleted_messages", messageCount)
-	send(url, "deleted_files", fileCount)
+	sendCounter(url, "deleted_messages", messageCount)
+	sendCounter(url, "deleted_files", fileCount)
 }
