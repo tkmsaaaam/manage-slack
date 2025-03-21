@@ -120,7 +120,7 @@ func (c *config) createMessage(countBySiteByChannel map[string]map[string]int, c
 	return message
 }
 
-func sendMetrics(countByHost map[string]int, countByChannel map[string]int, channelById map[string]slack.Channel) {
+func sendMetrics(countByHost, countByChannel map[string]int, channelById map[string]slack.Channel) {
 	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
 	if url == "" {
 		return
