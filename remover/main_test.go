@@ -130,7 +130,6 @@ func TestPostStartMessage(t *testing.T) {
 
 func TestPostEndMessage(t *testing.T) {
 	type args struct {
-		start        time.Time
 		ts           string
 		messageCount int
 		fileCount    int
@@ -144,13 +143,13 @@ func TestPostEndMessage(t *testing.T) {
 	}{
 		{
 			name:   "PostEndMessageOk",
-			args:   args{start: time.Now(), ts: "1503435956.000247", messageCount: 1, fileCount: 0},
+			args:   args{ts: "1503435956.000247", messageCount: 1, fileCount: 0},
 			apiRes: "testdata/chatPostMessage/ok.json",
 			want:   "",
 		},
 		{
 			name:   "PostEndMessageError",
-			args:   args{start: time.Now(), ts: "1503435956.000247", messageCount: 1, fileCount: 0},
+			args:   args{ts: "1503435956.000247", messageCount: 1, fileCount: 0},
 			apiRes: "testdata/chatPostMessage/error.json",
 			want:   "End message can not post: too_many_attachments",
 		},
@@ -177,7 +176,7 @@ func TestPostEndMessage(t *testing.T) {
 				buf.Reset()
 			}()
 
-			(&SlackClient{client}).postEndMessage(tt.args.start, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
+			(&SlackClient{client}).postEndMessage(1*time.Second, tt.args.ts, tt.args.messageCount, tt.args.fileCount)
 
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want {
