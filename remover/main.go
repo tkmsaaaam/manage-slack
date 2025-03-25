@@ -33,7 +33,7 @@ func (client *SlackClient) postStartMessage() string {
 	return ts
 }
 
-func (client *SlackClient) postEndMessage(duration time.Duration, ts string, messageCount int, fileCount int) {
+func (client *SlackClient) postEndMessage(duration time.Duration, ts string, messageCount, fileCount int) {
 	avg := float64(messageCount) / duration.Seconds()
 	message := "タスク実行を終了します\n" + duration.String() + "\n" + "message count: " + strconv.FormatInt(int64(messageCount), 10) + "\n" + "avg: " + strconv.FormatFloat(avg, 'f', -1, 64) + "/s" + "\n" + "file count: " + strconv.FormatInt(int64(fileCount), 10)
 	_, _, err := client.PostMessage(os.Getenv("SLACK_CHANNEL_ID"), slack.MsgOptionText(message, true), slack.MsgOptionTS(ts), slack.MsgOptionBroadcast())
@@ -42,7 +42,7 @@ func (client *SlackClient) postEndMessage(duration time.Duration, ts string, mes
 	}
 }
 
-func (client *SlackClient) deleteMessage(id string, ts string) {
+func (client *SlackClient) deleteMessage(id, ts string) {
 	_, _, err := client.DeleteMessage(id, ts)
 	if err != nil {
 		log.Println("Can not delete message:", id, ":", ts, ":", err)
@@ -118,7 +118,7 @@ func (client *SlackClient) deleteFiles(now time.Time, days int) int {
 }
 
 func sendCounter(url, k string, v int) {
-	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
+	n := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_"), "www_", "")
 	counter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "slack",
 		Name:        n,
@@ -131,12 +131,6 @@ func sendCounter(url, k string, v int) {
 }
 
 func main() {
-	var requestDuration = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:    "slack_remover_request_duration_seconds",
-		Buckets: prometheus.LinearBuckets(0.01, 0.01, 10),
-	})
-	timer := prometheus.NewTimer(requestDuration)
-	defer timer.ObserveDuration()
 	botClient := &SlackClient{slack.New(os.Getenv("SLACK_BOT_TOKEN"))}
 	userClient := &SlackClient{slack.New(os.Getenv("SLACK_USER_TOKEN"))}
 	start := time.Now()
@@ -158,4 +152,10 @@ func main() {
 	}
 	sendCounter(url, "deleted_messages", messageCount)
 	sendCounter(url, "deleted_files", fileCount)
+	requestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:        "remover_duration_seconds",
+		Namespace:   "slack",
+		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
+	})
+	requestDuration.Observe(duration.Seconds())
 }
