@@ -138,7 +138,7 @@ func sendMetrics(countByHost, countByChannel map[string]int, channelById map[str
 }
 
 func send(url, k, grouping string, v int) {
-	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
+	n := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_"), "www_", "")
 	counter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "slack",
 		Name:        n,

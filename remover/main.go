@@ -118,7 +118,7 @@ func (client *SlackClient) deleteFiles(now time.Time, days int) int {
 }
 
 func sendCounter(url, k string, v int) {
-	n := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_"), "www_", "")
+	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
 	counter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "slack",
 		Name:        n,
@@ -158,4 +158,7 @@ func main() {
 		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
 	})
 	requestDuration.Observe(duration.Seconds())
+	if err := push.New(url, "remover_duration_seconds").Collector(requestDuration).Push(); err != nil {
+		log.Println("can not push", err)
+	}
 }
