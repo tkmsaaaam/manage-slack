@@ -126,7 +126,7 @@ func sendCounter(url, k string, v int) {
 	})
 	counter.Add(float64(v))
 	if err := push.New(url, n).Collector(counter).Push(); err != nil {
-		log.Println("can not push", err)
+		log.Println("can not push", k, err)
 	}
 }
 
@@ -159,6 +159,6 @@ func main() {
 	})
 	requestDuration.Observe(duration.Seconds())
 	if err := push.New(url, "remover_duration_seconds").Collector(requestDuration).Push(); err != nil {
-		log.Println("can not push", err)
+		log.Println("can not push remover_duration_seconds", err)
 	}
 }
