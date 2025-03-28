@@ -125,10 +125,12 @@ func sendCounter(url, k string, v int) {
 		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
 	})
 	counter.Add(float64(v))
-	if err := push.New(url, n).Collector(counter).Push(); err != nil {
+	if err := push.New(url, jobName).Collector(counter).Push(); err != nil {
 		log.Println("can not push", k, err)
 	}
 }
+
+const jobName = "remover"
 
 func main() {
 	botClient := &SlackClient{slack.New(os.Getenv("SLACK_BOT_TOKEN"))}
@@ -158,7 +160,7 @@ func main() {
 		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
 	})
 	requestDuration.Observe(duration.Seconds())
-	if err := push.New(url, "remover_duration_seconds").Collector(requestDuration).Push(); err != nil {
+	if err := push.New(url, jobName).Collector(requestDuration).Push(); err != nil {
 		log.Println("can not push remover_duration_seconds", err)
 	}
 }
