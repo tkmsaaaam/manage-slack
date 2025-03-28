@@ -146,7 +146,7 @@ func send(url, k, grouping string, v int) {
 		ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": grouping},
 	})
 	counter.Add(float64(v))
-	if err := push.New(url, n).Collector(counter).Push(); err != nil {
+	if err := push.New(url, "summary").Collector(counter).Push(); err != nil {
 		log.Println("can not push", err)
 	}
 }
