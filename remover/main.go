@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -150,11 +151,17 @@ func main() {
 	fileCount := botClient.deleteFiles(start, days)
 	duration := time.Since(start)
 	botClient.postEndMessage(duration, ts, messageCount, fileCount)
-	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
-	if url == "" {
+	otelExporterEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
+	if otelExporterEndpoint == "" {
+		// OTEL_EXPORTER_OTLP_METRICS_ENDPOINT is optional, so no need to log
 		return
 	}
-	pusher := Pusher{push.New(url, "remover")}
+	_, err = url.Parse(otelExporterEndpoint)
+	if err != nil {
+		log.Println("can not parse otel url:", err)
+		return
+	}
+	pusher := Pusher{push.New(otelExporterEndpoint, "remover")}
 	pusher.sendCounter("deleted_messages", messageCount)
 	pusher.sendCounter("deleted_files", fileCount)
 	requestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{

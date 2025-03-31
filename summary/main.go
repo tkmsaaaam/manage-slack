@@ -125,11 +125,17 @@ type Pusher struct {
 }
 
 func sendMetrics(countByHost, countByChannel map[string]int, channelById map[string]slack.Channel) {
-	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
-	if url == "" {
+	otelExporterEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
+	if otelExporterEndpoint == "" {
+		// OTEL_EXPORTER_OTLP_METRICS_ENDPOINT is optional, so no need to log
 		return
 	}
-	pusher := Pusher{push.New(url, "summary")}
+	_, err := url.Parse(otelExporterEndpoint)
+	if err != nil {
+		log.Println("can not parse otel url:", err)
+		return
+	}
+	pusher := Pusher{push.New(otelExporterEndpoint, "summary")}
 	for k, v := range countByHost {
 		pusher.send(k, "host", v)
 	}
