@@ -120,24 +120,29 @@ func (c *config) createMessage(countBySiteByChannel map[string]map[string]int, c
 	return message
 }
 
+type Pusher struct {
+	*push.Pusher
+}
+
 func sendMetrics(countByHost, countByChannel map[string]int, channelById map[string]slack.Channel) {
 	url := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
 	if url == "" {
 		return
 	}
+	pusher := Pusher{push.New(url, "summary")}
 	for k, v := range countByHost {
-		send(url, k, "host", v)
+		pusher.send(k, "host", v)
 	}
 	for _, v := range channelById {
 		i := 0
 		if v, ok := countByChannel[v.ID]; ok {
 			i = v
 		}
-		send(url, v.Name, "channel", i)
+		pusher.send(v.Name, "channel", i)
 	}
 }
 
-func send(url, k, grouping string, v int) {
+func (pusher Pusher) send(k, grouping string, v int) {
 	n := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_"), "www_", "")
 	counter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "slack",
@@ -146,7 +151,7 @@ func send(url, k, grouping string, v int) {
 		ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": grouping},
 	})
 	counter.Add(float64(v))
-	if err := push.New(url, "summary").Collector(counter).Push(); err != nil {
-		log.Println("can not push", err)
+	if err := pusher.Collector(counter).Push(); err != nil {
+		log.Println("can not push", n, err)
 	}
 }

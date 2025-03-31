@@ -117,7 +117,7 @@ func (client *SlackClient) deleteFiles(now time.Time, days int) int {
 	return count
 }
 
-func sendCounter(url, k string, v int) {
+func (pusher Pusher) sendCounter(k string, v int) {
 	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
 	counter := prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "slack",
@@ -125,12 +125,14 @@ func sendCounter(url, k string, v int) {
 		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
 	})
 	counter.Add(float64(v))
-	if err := push.New(url, jobName).Collector(counter).Push(); err != nil {
+	if err := pusher.Collector(counter).Push(); err != nil {
 		log.Println("can not push", k, err)
 	}
 }
 
-const jobName = "remover"
+type Pusher struct {
+	*push.Pusher
+}
 
 func main() {
 	botClient := &SlackClient{slack.New(os.Getenv("SLACK_BOT_TOKEN"))}
@@ -152,15 +154,16 @@ func main() {
 	if url == "" {
 		return
 	}
-	sendCounter(url, "deleted_messages", messageCount)
-	sendCounter(url, "deleted_files", fileCount)
+	pusher := Pusher{push.New(url, "remover")}
+	pusher.sendCounter("deleted_messages", messageCount)
+	pusher.sendCounter("deleted_files", fileCount)
 	requestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:        "remover_duration_seconds",
 		Namespace:   "slack",
 		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
 	})
 	requestDuration.Observe(duration.Seconds())
-	if err := push.New(url, jobName).Collector(requestDuration).Push(); err != nil {
+	if err := pusher.Collector(requestDuration).Push(); err != nil {
 		log.Println("can not push remover_duration_seconds", err)
 	}
 }
