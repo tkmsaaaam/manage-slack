@@ -140,11 +140,11 @@ func sendMetrics(countByHost, countByChannel map[string]int, channelById map[str
 		pusher.send(k, "host", v)
 	}
 	for _, v := range channelById {
-		i := 0
-		if v, ok := countByChannel[v.ID]; ok {
-			i = v
+		if vv, ok := countByChannel[v.ID]; ok {
+			pusher.send(v.Name, "channel", vv)
+		} else {
+			pusher.send(v.Name, "channel", 0)
 		}
-		pusher.send(v.Name, "channel", i)
 	}
 }
 
