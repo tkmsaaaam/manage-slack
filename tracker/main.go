@@ -20,7 +20,9 @@ type Data struct {
 }
 
 type Thread struct {
-	Url string `json:"url"`
+	Url       string `json:"url"`
+	ChannelId string `json:"channel_id"`
+	ThreadTs  string `json:"thread_ts"`
 }
 
 func main() {
@@ -54,19 +56,27 @@ func main() {
 	}
 
 	for _, thread := range data.Threads {
-		if thread.Url == "" {
-			log.Println("url is empty")
+		if thread.Url == "" && thread.ChannelId == "" && thread.ThreadTs == "" {
+			log.Println("url, channel_id, and thread_ts are all empty")
 			continue
 		}
-		e := strings.Split(thread.Url, "/")
-		if len(e) < 5 {
-			log.Println("url is not valid", thread.Url)
-			continue
+		var channelID = thread.ChannelId
+		var timestamp = thread.ThreadTs
+		if thread.Url != "" {
+			e := strings.Split(thread.Url, "/")
+			if len(e) < 5 {
+				log.Println("url is not valid:", thread.Url)
+			} else {
+				channelID = e[4]
+				t := strings.ReplaceAll(e[5], "p", "")
+				timestamp = t[:10] + "." + t[10:]
+			}
 		}
 
-		channelID := e[4]
-		t := strings.ReplaceAll(e[5], "p", "")
-		timestamp := t[:10] + "." + t[10:]
+		if channelID == "" || timestamp == "" {
+			log.Println("channel_id and thread_ts are all empty")
+			continue
+		}
 
 		messages, _, _, err := userClient.GetConversationReplies(&slack.GetConversationRepliesParameters{ChannelID: channelID, Timestamp: timestamp})
 		if err != nil {
