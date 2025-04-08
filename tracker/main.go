@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"strconv"
@@ -14,48 +15,84 @@ type SlackClient struct {
 	*slack.Client
 }
 
+type Data struct {
+	Threads []Thread `json:"threads"`
+}
+
+type Thread struct {
+	Url string `json:"url"`
+}
+
 func main() {
 	userClient := &SlackClient{slack.New(os.Getenv("SLACK_USER_TOKEN"))}
-
-	targetUrl := os.Getenv("TARGET_URL")
-	if targetUrl == "" {
-		log.Println("TARGET_URL is not set")
-		return
-	}
-	e := strings.Split(targetUrl, "/")
-	if len(e) < 5 {
-		log.Println("TARGET_URL is not valid")
-		return
-	}
-
-	channelID := e[4]
-	t := strings.ReplaceAll(e[5], "p", "")
-	timestamp := t[:10]+"."+t[10:]
-
-	messages, _, _, err := userClient.GetConversationReplies(&slack.GetConversationRepliesParameters{ChannelID: channelID, Timestamp: timestamp})
+	targetPath := "data.json"
+	dirInfo, err := os.Stat(targetPath)
 	if err != nil {
-		log.Println("Can not get messages:", err)
+		if os.IsNotExist(err) {
+			log.Println(targetPath, "が存在しません: ", targetPath, err)
+			return
+		}
+		log.Println(targetPath, "の情報取得に失敗しました: ", err)
 		return
 	}
-	if len(messages) == 0 {
-		log.Println("No replies found")
+	if dirInfo.IsDir() {
+		log.Println(targetPath, "はファイルではありません")
 		return
 	}
-	for _, message := range messages {
-		ts := message.Msg.Timestamp
-		timestamp, err := strconv.ParseFloat(ts, 64)
-		if err != nil {
-			log.Println("Can not parse timestamp:", err)
+	file, err := os.Open(targetPath)
+	if err != nil {
+		log.Println(targetPath, "を開けませんでした: ", err)
+		return
+	}
+	defer file.Close()
+
+	var data Data
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&data); err != nil {
+		log.Println("JSONデコードに失敗しました: ", file, err)
+		return
+	}
+
+	for _, thread := range data.Threads {
+		if thread.Url == "" {
+			log.Println("url is empty")
+			continue
+		}
+		e := strings.Split(thread.Url, "/")
+		if len(e) < 5 {
+			log.Println("url is not valid", thread.Url)
 			continue
 		}
 
-		sec := int64(timestamp)
-		nsec := int64((timestamp - float64(sec)) * 1e9)
-		t := time.Unix(sec, nsec)
+		channelID := e[4]
+		t := strings.ReplaceAll(e[5], "p", "")
+		timestamp := t[:10] + "." + t[10:]
 
-		if t.After(time.Now().AddDate(0, 0, -1)) {
-			log.Println(targetUrl)
-			break
+		messages, _, _, err := userClient.GetConversationReplies(&slack.GetConversationRepliesParameters{ChannelID: channelID, Timestamp: timestamp})
+		if err != nil {
+			log.Println("Can not get messages:", err)
+			continue
+		}
+		if len(messages) == 0 {
+			log.Println("No replies found")
+			continue
+		}
+		for _, message := range messages {
+			ts := message.Msg.Timestamp
+			timestamp, err := strconv.ParseFloat(ts, 64)
+			if err != nil {
+				log.Println("Can not parse timestamp:", err)
+				continue
+			}
+
+			sec := int64(timestamp)
+			nsec := int64((timestamp - float64(sec)) * 1e9)
+			t := time.Unix(sec, nsec)
+
+			if t.After(time.Now().AddDate(0, 0, -1)) {
+				log.Println(thread.Url)
+				break
+			}
 		}
 	}
 }
