@@ -100,7 +100,7 @@ func main() {
 			t := time.Unix(sec, nsec)
 
 			if t.After(time.Now().AddDate(0, 0, -1)) {
-				log.Println(thread.Url)
+				log.Println("updated", thread.Url)
 				break
 			}
 		}
