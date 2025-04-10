@@ -62,6 +62,7 @@ func main() {
 		}
 		var channelID = thread.ChannelId
 		var timestamp = thread.ThreadTs
+		var latest = time.Date(0, 0, -1, 0, 0, 0, 0, time.Local)
 		if thread.Url != "" {
 			e := strings.Split(thread.Url, "/")
 			if len(e) < 5 {
@@ -99,10 +100,17 @@ func main() {
 			nsec := int64((timestamp - float64(sec)) * 1e9)
 			t := time.Unix(sec, nsec)
 
+			if latest.Before(t) {
+				latest = t
+			}
+
 			if t.After(time.Now().AddDate(0, 0, -1)) {
 				log.Println("updated", thread.Url)
 				break
 			}
+		}
+		if latest.Before(time.Now().AddDate(0, 0, -2)) {
+			log.Println("too old", thread.Url, "latest", latest)
 		}
 	}
 }
