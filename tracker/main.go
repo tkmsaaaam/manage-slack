@@ -109,7 +109,7 @@ func main() {
 				break
 			}
 		}
-		if latest.Before(time.Now().AddDate(0, 0, -2)) {
+		if latest.Before(time.Now().AddDate(0, 0, -7)) {
 			log.Println("too old", thread.Url, "latest", latest)
 		}
 	}
