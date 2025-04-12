@@ -55,6 +55,7 @@ func main() {
 		return
 	}
 
+	results := []Thread{}
 	for _, thread := range data.Threads {
 		if thread.Url == "" && thread.ChannelId == "" && thread.ThreadTs == "" {
 			log.Println("url, channel_id, and thread_ts are all empty")
@@ -111,6 +112,20 @@ func main() {
 		}
 		if latest.Before(time.Now().AddDate(0, 0, -7)) {
 			log.Println("too old", thread.Url, "latest", latest)
+			continue
 		}
+		results = append(results, thread)
+	}
+	file, err = os.Create(targetPath)
+	if err != nil {
+		log.Println(targetPath, "を開けませんでした: ", err)
+		return
+	}
+	defer file.Close()
+	r := Data{Threads: results}
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(r); err != nil {
+		log.Println("JSONエンコードに失敗しました: ", file, err)
+		return
 	}
 }
