@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/url"
@@ -9,9 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/slack-go/slack"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 type SlackClient struct {
@@ -118,22 +123,7 @@ func (client *SlackClient) deleteFiles(now time.Time, days int) int {
 	return count
 }
 
-func (pusher Pusher) sendCounter(k string, v int) {
-	n := strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_")
-	counter := prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "slack",
-		Name:        n,
-		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
-	})
-	counter.Add(float64(v))
-	if err := pusher.Collector(counter).Push(); err != nil {
-		log.Println("can not push", k, err)
-	}
-}
 
-type Pusher struct {
-	*push.Pusher
-}
 
 func main() {
 	botClient := &SlackClient{slack.New(os.Getenv("SLACK_BOT_TOKEN"))}
@@ -161,16 +151,72 @@ func main() {
 		log.Println("can not parse otel url:", err)
 		return
 	}
-	pusher := Pusher{push.New(otelExporterEndpoint, "remover")}
-	pusher.sendCounter("deleted_messages", messageCount)
-	pusher.sendCounter("deleted_files", fileCount)
-	requestDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name:        "remover_duration_seconds",
-		Namespace:   "slack",
-		ConstLabels: prometheus.Labels{"pusher": "slack-remover"},
-	})
-	requestDuration.Observe(duration.Seconds())
-	if err := pusher.Collector(requestDuration).Push(); err != nil {
-		log.Println("can not push remover_duration_seconds", err)
+
+	ctx := context.Background()
+
+	protocol := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")
+	if protocol == "" {
+		protocol = os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
+	}
+
+	isHTTP := strings.Contains(protocol, "http")
+	if protocol == "" {
+		if strings.HasPrefix(otelExporterEndpoint, "http://") || strings.HasPrefix(otelExporterEndpoint, "https://") {
+			isHTTP = true
+		}
+	}
+
+	var exporter sdkmetric.Exporter
+	if isHTTP {
+		exporter, err = otlpmetrichttp.New(ctx)
+	} else {
+		exporter, err = otlpmetricgrpc.New(ctx)
+	}
+	if err != nil {
+		log.Println("failed to create otel exporter:", err)
+		return
+	}
+
+	reader := sdkmetric.NewPeriodicReader(exporter)
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	defer func() {
+		if err := provider.Shutdown(ctx); err != nil {
+			log.Println("error shutting down meter provider:", err)
+		}
+	}()
+	otel.SetMeterProvider(provider)
+
+	meter := provider.Meter("github.com/tkmsaaaam/manage-slack/remover")
+
+	deletedMessagesCounter, err := meter.Int64Counter("slack_deleted_messages",
+		metric.WithDescription("Number of deleted messages"),
+	)
+	if err != nil {
+		log.Println("failed to create deleted messages counter:", err)
+	}
+
+	deletedFilesCounter, err := meter.Int64Counter("slack_deleted_files",
+		metric.WithDescription("Number of deleted files"),
+	)
+	if err != nil {
+		log.Println("failed to create deleted files counter:", err)
+	}
+
+	removerDuration, err := meter.Float64Histogram("slack_remover_duration_seconds",
+		metric.WithDescription("Duration of the remover run in seconds"),
+	)
+	if err != nil {
+		log.Println("failed to create duration histogram:", err)
+	}
+
+	opts := metric.WithAttributes(attribute.String("pusher", "slack-remover"))
+	if deletedMessagesCounter != nil {
+		deletedMessagesCounter.Add(ctx, int64(messageCount), opts)
+	}
+	if deletedFilesCounter != nil {
+		deletedFilesCounter.Add(ctx, int64(fileCount), opts)
+	}
+	if removerDuration != nil {
+		removerDuration.Record(ctx, duration.Seconds(), opts)
 	}
 }

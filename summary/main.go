@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/url"
 	"os"
@@ -8,9 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/slack-go/slack"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 type config struct {
@@ -120,10 +125,6 @@ func (c *config) createMessage(countBySiteByChannel map[string]map[string]int, c
 	return message
 }
 
-type Pusher struct {
-	*push.Pusher
-}
-
 func sendMetrics(countByHost, countByChannel map[string]int, channelById map[string]slack.Channel) {
 	otelExporterEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
 	if otelExporterEndpoint == "" {
@@ -135,29 +136,68 @@ func sendMetrics(countByHost, countByChannel map[string]int, channelById map[str
 		log.Println("can not parse otel url:", err)
 		return
 	}
-	pusher := Pusher{push.New(otelExporterEndpoint, "summary")}
+
+	ctx := context.Background()
+
+	protocol := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")
+	if protocol == "" {
+		protocol = os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
+	}
+
+	isHTTP := strings.Contains(protocol, "http")
+	if protocol == "" {
+		if strings.HasPrefix(otelExporterEndpoint, "http://") || strings.HasPrefix(otelExporterEndpoint, "https://") {
+			isHTTP = true
+		}
+	}
+
+	var exporter sdkmetric.Exporter
+	if isHTTP {
+		exporter, err = otlpmetrichttp.New(ctx)
+	} else {
+		exporter, err = otlpmetricgrpc.New(ctx)
+	}
+	if err != nil {
+		log.Println("failed to create otel exporter:", err)
+		return
+	}
+
+	reader := sdkmetric.NewPeriodicReader(exporter)
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	defer func() {
+		if err := provider.Shutdown(ctx); err != nil {
+			log.Println("error shutting down meter provider:", err)
+		}
+	}()
+	otel.SetMeterProvider(provider)
+
+	meter := provider.Meter("github.com/tkmsaaaam/manage-slack/summary")
+
 	for k, v := range countByHost {
-		pusher.send(k, "host", v)
+		send(ctx, meter, k, "host", v)
 	}
 	for _, v := range channelById {
 		if vv, ok := countByChannel[v.ID]; ok {
-			pusher.send(v.Name, "channel", vv)
+			send(ctx, meter, v.Name, "channel", vv)
 		} else {
-			pusher.send(v.Name, "channel", 0)
+			send(ctx, meter, v.Name, "channel", 0)
 		}
 	}
 }
 
-func (pusher Pusher) send(k, grouping string, v int) {
+func send(ctx context.Context, meter metric.Meter, k, grouping string, v int) {
 	n := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_"), "www_", "")
-	counter := prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "slack",
-		Name:        n,
-		Help:        k + " messages count by " + grouping,
-		ConstLabels: prometheus.Labels{"pusher": "slack-daily", "grouping": grouping},
-	})
-	counter.Add(float64(v))
-	if err := pusher.Collector(counter).Push(); err != nil {
-		log.Println("can not push", n, err)
+	metricName := "slack_" + n
+	counter, err := meter.Int64Counter(metricName,
+		metric.WithDescription(k+" messages count by "+grouping),
+	)
+	if err != nil {
+		log.Println("failed to create counter:", metricName, err)
+		return
 	}
+	opts := metric.WithAttributes(
+		attribute.String("pusher", "slack-daily"),
+		attribute.String("grouping", grouping),
+	)
+	counter.Add(ctx, int64(v), opts)
 }
