@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 type config struct {
@@ -38,7 +39,7 @@ func main() {
 		channelById[channel.ID] = channel
 	}
 
-	countBySiteByChannel, countByHost, countBychannel := c.makeResult(conversations)
+	countBySiteByChannel, countByHostByChannel, countBychannel := c.makeResult(conversations)
 
 	message := c.createMessage(countBySiteByChannel, countBychannel, channelById)
 	botClient := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
@@ -46,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Println("can not post:", err)
 	}
-	sendMetrics(countByHost, countBychannel, channelById)
+	sendMetrics(countByHostByChannel, channelById)
 }
 
 func (c *config) getConversationsForUser() []slack.Channel {
@@ -57,12 +58,12 @@ func (c *config) getConversationsForUser() []slack.Channel {
 	return conversations
 }
 
-func (c *config) makeResult(conversations []slack.Channel) (map[string]map[string]int, map[string]int, map[string]int) {
+func (c *config) makeResult(conversations []slack.Channel) (map[string]map[string]int, map[string]map[string]int, map[string]int) {
 	latest := strconv.FormatInt(time.Date(c.now.Year(), c.now.Month(), c.now.Day(), 0, 0, 0, 0, c.now.Location()).Unix(), 10)
 	oldest := strconv.FormatInt(time.Date(c.yesterDay.Year(), c.yesterDay.Month(), c.yesterDay.Day(), 0, 0, 0, 0, c.yesterDay.Location()).Unix(), 10)
 
 	countBySiteByChannel := map[string]map[string]int{}
-	countByHost := map[string]int{}
+	countByHostByChannel := map[string]map[string]int{}
 	countByChannel := map[string]int{}
 
 	for _, conversation := range conversations {
@@ -75,6 +76,7 @@ func (c *config) makeResult(conversations []slack.Channel) (map[string]map[strin
 
 		i := len(conversationHistory.Messages)
 		countByUser := map[string]int{}
+		countByHost := map[string]int{}
 		for _, message := range conversationHistory.Messages {
 			i += message.ReplyCount
 
@@ -99,8 +101,9 @@ func (c *config) makeResult(conversations []slack.Channel) (map[string]map[strin
 
 		countByChannel[conversation.ID] = i
 		countBySiteByChannel[conversation.ID] = countByUser
+		countByHostByChannel[conversation.ID] = countByHost
 	}
-	return countBySiteByChannel, countByHost, countByChannel
+	return countBySiteByChannel, countByHostByChannel, countByChannel
 }
 
 func (c *config) createMessage(countBySiteByChannel map[string]map[string]int, countByChannel map[string]int, channelById map[string]slack.Channel) string {
@@ -125,7 +128,7 @@ func (c *config) createMessage(countBySiteByChannel map[string]map[string]int, c
 	return message
 }
 
-func sendMetrics(countByHost, countByChannel map[string]int, channelById map[string]slack.Channel) {
+func sendMetrics(countByHostByChannel map[string]map[string]int, channelById map[string]slack.Channel) {
 	otelExporterEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")
 	if otelExporterEndpoint == "" {
 		// OTEL_EXPORTER_OTLP_METRICS_ENDPOINT is optional, so no need to log
@@ -162,8 +165,20 @@ func sendMetrics(countByHost, countByChannel map[string]int, channelById map[str
 		return
 	}
 
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			attribute.String("service.name", "manage-slack/summary"),
+		),
+	)
+	if err != nil {
+		log.Println("failed to create resource:", err)
+	}
+
 	reader := sdkmetric.NewPeriodicReader(exporter)
-	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(reader),
+		sdkmetric.WithResource(res),
+	)
 	defer func() {
 		if err := provider.Shutdown(ctx); err != nil {
 			log.Println("error shutting down meter provider:", err)
@@ -173,31 +188,27 @@ func sendMetrics(countByHost, countByChannel map[string]int, channelById map[str
 
 	meter := provider.Meter("github.com/tkmsaaaam/manage-slack/summary")
 
-	for k, v := range countByHost {
-		send(ctx, meter, k, "host", v)
-	}
-	for _, v := range channelById {
-		if vv, ok := countByChannel[v.ID]; ok {
-			send(ctx, meter, v.Name, "channel", vv)
-		} else {
-			send(ctx, meter, v.Name, "channel", 0)
-		}
-	}
-}
-
-func send(ctx context.Context, meter metric.Meter, k, grouping string, v int) {
-	n := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(k, ".", "_"), "-", "_"), "www_", "")
-	metricName := "slack_" + n
-	counter, err := meter.Int64Counter(metricName,
-		metric.WithDescription(k+" messages count by "+grouping),
+	counter, err := meter.Int64Counter("rss.article.count",
+		metric.WithDescription("RSS article messages count"),
 	)
 	if err != nil {
-		log.Println("failed to create counter:", metricName, err)
+		log.Println("failed to create counter rss.article.count:", err)
 		return
 	}
-	opts := metric.WithAttributes(
-		attribute.String("pusher", "slack-daily"),
-		attribute.String("grouping", grouping),
-	)
-	counter.Add(ctx, int64(v), opts)
+
+	for channelID, hostMap := range countByHostByChannel {
+		channel, ok := channelById[channelID]
+		if !ok {
+			continue
+		}
+		sanitizedChannel := strings.ReplaceAll(strings.ReplaceAll(channel.Name, ".", "_"), "-", "_")
+		for host, v := range hostMap {
+			sanitizedHost := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(host, ".", "_"), "-", "_"), "www_", "")
+			opts := metric.WithAttributes(
+				attribute.String("host", sanitizedHost),
+				attribute.String("channel", sanitizedChannel),
+			)
+			counter.Add(ctx, int64(v), opts)
+		}
+	}
 }

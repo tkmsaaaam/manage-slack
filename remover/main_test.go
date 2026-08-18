@@ -305,8 +305,8 @@ func TestLoopInAllChannels(t *testing.T) {
 		days     int
 	}
 	type want struct {
-		count int
-		print string
+		countByChannel map[string]int
+		print          string
 	}
 
 	type apiRes struct {
@@ -324,37 +324,37 @@ func TestLoopInAllChannels(t *testing.T) {
 			name:   "AMessage",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessage.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
-			want:   want{count: 1, print: ""},
+			want:   want{countByChannel: map[string]int{"": 1}, print: ""},
 		},
 		{
 			name:   "TwoMessage",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/twoMessages.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
-			want:   want{count: 2, print: ""},
+			want:   want{countByChannel: map[string]int{"": 2}, print: ""},
 		},
 		{
 			name:   "WithReaction",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/twoMessagesWithReaction.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
-			want:   want{count: 1, print: ""},
+			want:   want{countByChannel: map[string]int{"": 1}, print: ""},
 		},
 		{
 			name:   "ConversationsHistoryError",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/error.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
-			want:   want{count: 0, print: "Can not get history: channel_not_found"},
+			want:   want{countByChannel: map[string]int{}, print: "Can not get history: channel_not_found"},
 		},
 		{
 			name:   "WithReplyOk",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessageWithReply.json", conversationsReplies: "testdata/conversationsReplies/messages.json"},
-			want:   want{count: 3, print: ""},
+			want:   want{countByChannel: map[string]int{"": 3}, print: ""},
 		},
 		{
 			name:   "WithReplyError",
 			args:   args{channels: []slack.Channel{{}}, now: time.Now(), days: 3},
 			apiRes: apiRes{conversationsHistory: "testdata/conversationsHistory/aMessageWithReply.json", conversationsReplies: "testdata/conversationsReplies/error.json"},
-			want:   want{count: 1, print: "Can not get replies: thread_not_found"},
+			want:   want{countByChannel: map[string]int{"": 1}, print: "Can not get replies: thread_not_found"},
 		},
 	}
 	for _, tt := range tests {
@@ -389,8 +389,13 @@ func TestLoopInAllChannels(t *testing.T) {
 
 			got := (&SlackClient{client}).loopInAllChannels(tt.args.channels, tt.args.now, tt.args.days)
 
-			if got != tt.want.count {
-				t.Errorf("loopInAllChannels() = %v, want %v", got, tt.want.count)
+			if len(got) != len(tt.want.countByChannel) {
+				t.Errorf("loopInAllChannels() len = %v, want %v", len(got), len(tt.want.countByChannel))
+			}
+			for k, wantCount := range tt.want.countByChannel {
+				if got[k] != wantCount {
+					t.Errorf("loopInAllChannels()[%q] = %v, want %v", k, got[k], wantCount)
+				}
 			}
 			gotPrint := strings.TrimRight(buf.String(), "\n")
 			if gotPrint != tt.want.print {

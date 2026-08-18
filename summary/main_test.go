@@ -87,7 +87,7 @@ func TestMakeResult(t *testing.T) {
 	}
 	type want struct {
 		countBySiteByChannel map[string]map[string]int
-		countByHost          map[string]int
+		countByHostByChannel map[string]map[string]int
 		countByChannel       map[string]int
 		err                  string
 	}
@@ -103,31 +103,31 @@ func TestMakeResult(t *testing.T) {
 			name:   "aMessage",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/aMessage.json",
-			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {}}, countByHost: map[string]int{}, countByChannel: map[string]int{"ABCDEF12345": 1}},
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {}}, countByHostByChannel: map[string]map[string]int{"ABCDEF12345": {}}, countByChannel: map[string]int{"ABCDEF12345": 1}},
 		},
 		{
 			name:   "aMessageWithLink",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/messageWithLink.json",
-			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {"bot-user-name": 1}}, countByHost: map[string]int{"example.com": 1}, countByChannel: map[string]int{"ABCDEF12345": 1}},
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {"bot-user-name": 1}}, countByHostByChannel: map[string]map[string]int{"ABCDEF12345": {"example.com": 1}}, countByChannel: map[string]int{"ABCDEF12345": 1}},
 		},
 		{
 			name:   "aMessageWithInvalidLink",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/messageWithInvalidLink.json",
-			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {"ABCDEF123": 1}}, countByHost: map[string]int{}, countByChannel: map[string]int{"ABCDEF12345": 1}},
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {"ABCDEF123": 1}}, countByHostByChannel: map[string]map[string]int{"ABCDEF12345": {}}, countByChannel: map[string]int{"ABCDEF12345": 1}},
 		},
 		{
 			name:   "twoMessageInDefferentChannel",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/aMessage.json",
-			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {}, "ABCDEF01234": {}}, countByHost: map[string]int{}, countByChannel: map[string]int{"ABCDEF01234": 1, "ABCDEF12345": 1}},
+			want:   want{countBySiteByChannel: map[string]map[string]int{"ABCDEF12345": {}, "ABCDEF01234": {}}, countByHostByChannel: map[string]map[string]int{"ABCDEF12345": {}, "ABCDEF01234": {}}, countByChannel: map[string]int{"ABCDEF01234": 1, "ABCDEF12345": 1}},
 		},
 		{
 			name:   "twoMessageInDefferentChannelWithError",
 			args:   args{conversations: []slack.Channel{{GroupConversation: slack.GroupConversation{Name: "channelNameA", Conversation: slack.Conversation{ID: "ABCDEF01234"}}}, {GroupConversation: slack.GroupConversation{Name: "channelName", Conversation: slack.Conversation{ID: "ABCDEF12345"}}}}, now: now, yesterDay: yesterDay},
 			apiRes: "testdata/conversationsHistory/error.json",
-			want:   want{countByHost: map[string]int{}, countByChannel: map[string]int{}, err: "can not get history channelID: ABCDEF01234 channel_not_found\ncan not get history channelID: ABCDEF12345 channel_not_found"},
+			want:   want{countByHostByChannel: map[string]map[string]int{}, countByChannel: map[string]int{}, err: "can not get history channelID: ABCDEF01234 channel_not_found\ncan not get history channelID: ABCDEF12345 channel_not_found"},
 		},
 	}
 
@@ -153,7 +153,7 @@ func TestMakeResult(t *testing.T) {
 			}()
 
 			c := &config{userClient: client}
-			actualCountBySiteByChannel, actualCountByHost, actualCountByChannel := c.makeResult(tt.args.conversations)
+			actualCountBySiteByChannel, actualCountByHostByChannel, actualCountByChannel := c.makeResult(tt.args.conversations)
 			if len(actualCountByChannel) != len(tt.want.countByChannel) {
 				t.Errorf("len(createChannels().countByChannel) = \n%v, want \n%v", actualCountByChannel, tt.want.countByChannel)
 			}
@@ -165,15 +165,19 @@ func TestMakeResult(t *testing.T) {
 
 				}
 			}
-			if len(actualCountByHost) != len(tt.want.countByHost) {
-				t.Errorf("len(createChannels().countByHost) = \n%v, want \n%v", actualCountByHost, tt.want.countByHost)
+			if len(actualCountByHostByChannel) != len(tt.want.countByHostByChannel) {
+				t.Errorf("len(createChannels().countByHostByChannel) = \n%v, want \n%v", actualCountByHostByChannel, tt.want.countByHostByChannel)
 			}
-			if len(actualCountByHost) > 0 {
-				for k, v := range tt.want.countByHost {
-					if v != actualCountByHost[k] {
-						t.Errorf("createChannels() countByHost %v = \n%v (%v), want \n%v (%v)", k, actualCountByHost[k], actualCountByHost, v, tt.want.countByHost)
+			if len(actualCountByHostByChannel) > 0 {
+				for k, v := range tt.want.countByHostByChannel {
+					if len(v) != len(actualCountByHostByChannel[k]) {
+						t.Errorf("len(createChannels() countByHostByChannel) %v = \n%v (%v), want \n%v (%v)", k, actualCountByHostByChannel[k], actualCountByHostByChannel, v, tt.want.countByHostByChannel)
 					}
-
+					for kk, vv := range v {
+						if vv != actualCountByHostByChannel[k][kk] {
+							t.Errorf("createChannels() countByHostByChannel %v.%v = \n%v (%v), want \n%v (%v)", k, kk, actualCountByHostByChannel[k][kk], actualCountByHostByChannel, vv, tt.want.countByHostByChannel)
+						}
+					}
 				}
 			}
 			if len(actualCountBySiteByChannel) != len(tt.want.countBySiteByChannel) {
