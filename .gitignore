@@ -5,3 +5,4 @@ main
 manage-slack
 **.html
 **.out
+**/.otelc-build
